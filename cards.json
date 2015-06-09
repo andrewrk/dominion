@@ -9,55 +9,81 @@
       "cost": 0,
       "type": {
         "Treasure": true
-      }
+      },
+      "treasure": 1
     },
     "Silver": {
       "cost": 3,
       "type": {
         "Treasure": true
-      }
+      },
+      "treasure": 2
     },
     "Gold": {
       "cost": 6,
       "type": {
         "Treasure": true
-      }
+      },
+      "treasure": 3
     },
     "Curse": {
       "cost": 0,
       "type": {
         "Curse": true
-      }
+      },
+      "victory": -1
     },
     "Estate": {
       "cost": 2,
       "type": {
         "Victory": true
-      }
+      },
+      "victory": 1
     },
     "Duchy": {
       "cost": 5,
       "type": {
         "Victory": true
-      }
+      },
+      "victory": 3
     },
     "Province": {
       "cost": 8,
       "type": {
         "Victory": true
-      }
+      },
+      "victory": 6
     },
     "Cellar": {
       "cost": 2,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "discardThenDraw"
+        }
+      ]
     },
     "Chapel": {
       "cost": 2,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "trashUpTo",
+          "params": {
+            "amount": 4
+          }
+        }
+      ]
     },
     "Moat": {
       "cost": 2,
