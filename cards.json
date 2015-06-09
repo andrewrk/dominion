@@ -118,7 +118,19 @@
       "cost": 3,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "discardDeck",
+          "optional": true
+        }
+      ]
     },
     "Village": {
       "cost": 3,
