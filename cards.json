@@ -237,8 +237,29 @@
     "Bureaucrat": {
       "cost": 4,
       "type": {
-        "Action": true
-      }
+        "Action": true,
+        "Attack": true
+      },
+      "effects": [
+        {
+          "name": "gainCard",
+          "params": {
+            "name": "Silver",
+            "onTopOfDeck": true
+          }
+        },
+        {
+          "name": "attackPutCardsOnDeck",
+          "params": {
+            "type": {
+              "Victory": true
+            },
+            "else": {
+              "name": "revealHand"
+            }
+          }
+        }
+      ]
     },
     "Feast": {
       "cost": 4,
