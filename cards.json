@@ -204,13 +204,35 @@
       "cost": 3,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusBuy",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 2
+          }
+        }
+      ]
     },
     "Workshop": {
       "cost": 3,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "gainCard",
+          "params": {
+            "costingUpTo": 4
+          }
+        }
+      ]
     },
     "Bureaucrat": {
       "cost": 4,
