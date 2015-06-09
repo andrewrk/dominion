@@ -184,7 +184,21 @@
       "cost": 3,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 2
+          }
+        }
+      ]
     },
     "Woodcutter": {
       "cost": 3,
