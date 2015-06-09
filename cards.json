@@ -90,7 +90,29 @@
       "type": {
         "Action": true,
         "Reaction": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 2
+          }
+        }
+      ],
+      "conditions": [
+        {
+          "name": "onAttack",
+          "optional": true,
+          "effects": [
+            {
+              "name": "revealThisCard"
+            },
+            {
+              "name": "unaffectedByAttack"
+            }
+          ]
+        }
+      ]
     },
     "Chancellor": {
       "cost": 3,
