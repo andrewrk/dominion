@@ -1,7 +1,55 @@
 {
   "sets": {
     "Base Set": {
-
+      "cards": {
+        "Copper": 60,
+        "Silver": 40,
+        "Gold": 30,
+        "Estate": 24,
+        "Duchy": 12,
+        "Province": 12,
+        "Curse": 30,
+        "Gardens": 12,
+        "Cellar": 10,
+        "Chapel": 10,
+        "Moat": 10,
+        "Chancellor": 10,
+        "Village": 10,
+        "Woodcutter": 10,
+        "Workshop": 10,
+        "Bureaucrat": 10,
+        "Feast": 10,
+        "Gardens": 10,
+        "Militia": 10,
+        "Moneylender": 10,
+        "Remodel": 10,
+        "Smithy": 10,
+        "Spy": 10,
+        "Thief": 10,
+        "Throne Room": 10,
+        "Council Room": 10,
+        "Festival": 10,
+        "Laboratory": 10,
+        "Library": 10,
+        "Market": 10,
+        "Mine": 10,
+        "Witch": 10,
+        "Adventurer": 10
+      },
+      "playerCountOverrides": {
+        "2": {
+          "Estate": 8,
+          "Duchy": 8,
+          "Province": 8,
+          "Curse": 10
+        },
+        "3": {
+          "Estate": 10,
+          "Duchy": 10,
+          "Province": 10,
+          "Curse": 20
+        }
+      }
     }
   },
   "cards": {
