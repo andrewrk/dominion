@@ -1,0 +1,206 @@
+{
+  "sets": {
+    "Base Set": {
+
+    }
+  },
+  "cards": {
+    "Copper": {
+      "cost": 0,
+      "type": {
+        "Treasure": true
+      }
+    },
+    "Silver": {
+      "cost": 3,
+      "type": {
+        "Treasure": true
+      }
+    },
+    "Gold": {
+      "cost": 6,
+      "type": {
+        "Treasure": true
+      }
+    },
+    "Curse": {
+      "cost": 0,
+      "type": {
+        "Curse": true
+      }
+    },
+    "Estate": {
+      "cost": 2,
+      "type": {
+        "Victory": true
+      }
+    },
+    "Duchy": {
+      "cost": 5,
+      "type": {
+        "Victory": true
+      }
+    },
+    "Province": {
+      "cost": 8,
+      "type": {
+        "Victory": true
+      }
+    },
+    "Cellar": {
+      "cost": 2,
+      "type": {
+        "Action": true
+      }
+    },
+    "Chapel": {
+      "cost": 2,
+      "type": {
+        "Action": true
+      }
+    },
+    "Moat": {
+      "cost": 2,
+      "type": {
+        "Action": true,
+        "Reaction": true
+      }
+    },
+    "Chancellor": {
+      "cost": 3,
+      "type": {
+        "Action": true
+      }
+    },
+    "Village": {
+      "cost": 3,
+      "type": {
+        "Action": true
+      }
+    },
+    "Woodcutter": {
+      "cost": 3,
+      "type": {
+        "Action": true
+      }
+    },
+    "Workshop": {
+      "cost": 3,
+      "type": {
+        "Action": true
+      }
+    },
+    "Bureaucrat": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Feast": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Gardens": {
+      "cost": 4,
+      "type": {
+        "Victory": true
+      }
+    },
+    "Militia": {
+      "cost": 4,
+      "type": {
+        "Action": true,
+        "Attack": true
+      }
+    },
+    "Moneylender": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Remodel": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Smithy": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Spy": {
+      "cost": 4,
+      "type": {
+        "Action": true,
+        "Attack": true
+      }
+    },
+    "Thief": {
+      "cost": 4,
+      "type": {
+        "Action": true,
+        "Attack": true
+      }
+    },
+    "Throne Room": {
+      "cost": 4,
+      "type": {
+        "Action": true
+      }
+    },
+    "Council Room": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Festival": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Laboratory": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Library": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Market": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Mine": {
+      "cost": 5,
+      "type": {
+        "Action": true
+      }
+    },
+    "Witch": {
+      "cost": 5,
+      "type": {
+        "Action": true,
+        "Attack": true
+      }
+    },
+    "Adventurer": {
+      "cost": 6,
+      "type": {
+        "Action": true
+      }
+    }
+  }
+}
