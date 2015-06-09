@@ -346,7 +346,27 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "ifYouDo",
+          "params": {
+            "conditionalAction": {
+              "name": "trashCards",
+              "params": {
+                "count": 1,
+                "name": "Copper"
+              }
+            },
+            "ifYouDoAction": {
+              "name": "plusTreasure",
+              "params": {
+                "amount": 3
+              }
+            }
+          }
+        }
+      ]
     },
     "Remodel": {
       "cost": 4,
