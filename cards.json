@@ -326,7 +326,21 @@
       "type": {
         "Action": true,
         "Attack": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "attackDiscardDownTo",
+          "params": {
+            "cardCount": 3
+          }
+        }
+      ]
     },
     "Moneylender": {
       "cost": 4,
