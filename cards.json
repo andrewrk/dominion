@@ -79,28 +79,56 @@
       "type": {
         "Curse": true
       },
-      "victory": -1
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": -1
+          }
+        }
+      ]
     },
     "Estate": {
       "cost": 2,
       "type": {
         "Victory": true
       },
-      "victory": 1
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": 1
+          }
+        }
+      ]
     },
     "Duchy": {
       "cost": 5,
       "type": {
         "Victory": true
       },
-      "victory": 3
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": 3
+          }
+        }
+      ]
     },
     "Province": {
       "cost": 8,
       "type": {
         "Victory": true
       },
-      "victory": 6
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": 6
+          }
+        }
+      ]
     },
     "Cellar": {
       "cost": 2,
@@ -282,7 +310,16 @@
       "cost": 4,
       "type": {
         "Victory": true
-      }
+      },
+      "victory": [
+        {
+          "type": "perCardInDeck",
+          "params": {
+            "divisor": 10,
+            "multiplier": 1
+          }
+        }
+      ]
     },
     "Militia": {
       "cost": 4,
