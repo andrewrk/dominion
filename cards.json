@@ -265,7 +265,18 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "trashThisCard"
+        },
+        {
+          "name": "gainCard",
+          "params": {
+            "costingUpTo": 5
+          }
+        }
+      ]
     },
     "Gardens": {
       "cost": 4,
