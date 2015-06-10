@@ -1,0 +1,12 @@
+{
+  "name": "dominion",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Playing around with text-based Dominion card game.",
+  "main": "dominion.js",
+  "author": "Andrew Kelley <superjoe30@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "random-js": "~1.0.4"
+  }
+}

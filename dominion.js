@@ -1,4 +1,5 @@
 var dominion = importAndProcessCards();
+var RNG = require('./lib/rng');
 var nextState = 0;
 var STATE_ACTION = nextState++;
 var STATE_TREASURE = nextState++;
@@ -6,43 +7,36 @@ var STATE_BUY = nextState++;
 var moveTable = {
   'playCard': doPlayCardMove,
   'buy': doBuyMove,
+  'endTurn': doEndTurn,
+};
+var ais = {
+  'rando': require('./lib/ai/rando'),
+  'bigmoney': require('./lib/ai/bigmoney'),
+  'cli': require('./lib/ai/cli'),
 };
 
+var args = processCommandLineArgs();
+var state = shuffleAndDeal(args.players, args.seed);
+console.log("seed: " + args.seed);
+mainLoop(state);
 
-var readline = require('readline');
-var rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-var state = shuffleAndDeal(2);
-
-userInputPrompt();
-
-function userInputPrompt() {
+function mainLoop(state) {
   printGameState(state);
-  console.log("Possible moves:");
-  var moves = enumerateMoves(state);
-  for (var i = 0; i < moves.length; i += 1) {
-    var move = moves[i];
-    console.log("(" + (i + 1) + ") " + moveToString(move));
+  var player = getCurrentPlayer(state);
+  var moveList = enumerateMoves(state);
+  printPossibleMoves(moveList);
+  if (moveList.length === 0) {
+    throw new Error("no move possible");
   }
-  doPrompt();
-
-  function onUserInput(inputText) {
-    var choice = parseInt(inputText, 10);
-    var moveIndex = choice - 1;
-    if (isNaN(choice) || moveIndex < 0 || moveIndex >= moves.length) {
-      console.log("No.");
-      doPrompt();
-      return;
-    }
-    performMove(state, moves[moveIndex]);
-    userInputPrompt();
-  }
-
-  function doPrompt() {
-    rl.question("> ", onUserInput);
+  player.ai.chooseMove(dominion, state, moveList, onMoveChosen);
+  function onMoveChosen(err, move) {
+    if (err) throw err;
+    if (!move) throw new Error("invalid move");
+    performMove(state, move);
+    console.log(playerName(player) + " chooses: " + moveToString(move));
+    setImmediate(function() {
+      mainLoop(state);
+    });
   }
 }
 
@@ -52,31 +46,85 @@ function moveToString(move) {
       return "Play " + move.params.card;
     case 'buy':
       return "Buy " + move.params.card;
+    case 'endTurn':
+      return "End turn";
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
 }
 
+function processCommandLineArgs() {
+  var args = {
+    players: [],
+    seed: +(new Date()),
+  };
+  var aiNames = [];
+  var i, aiName;
+  for (i = 2; i < process.argv.length; i += 1) {
+    var arg = process.argv[i];
+    if (/^--/.test(arg)) {
+      if (i + 1 >= process.argv.length) argParseError("expected argument after " + arg);
+      var nextArg = process.argv[++i];
+      if (arg === '--player') {
+        aiNames.push(nextArg);
+      } else if (arg === '--seed') {
+        args.seed = parseInt(nextArg, 10);
+        if (isNaN(args.seed)) argParseError("invalid seed");
+      } else {
+        argParseError("unrecognized argument: " + arg);
+      }
+    } else {
+      argParseError("unrecognized argument: " + arg);
+    }
+  }
+  if (aiNames.length < 2 || aiNames.length > 4) {
+    argParseError("Dominion is 2-4 players. Use a correct number of --player arguments.");
+  }
+  for (i = 0; i < aiNames.length; i += 1) {
+    aiName = aiNames[i];
+    var ai = ais[aiName];
+    if (!ai) {
+      argParseError("Invalid AI name: " + aiName);
+    }
+    args.players.push(ai);
+  }
+  return args;
+}
+
+function argParseError(msg) {
+  console.error("Usage: " + process.argv[0] + " " + process.argv[1] + " [--player <AI_Name>]");
+  console.error("AIs available: " + Object.keys(ais).join(" "));
+  console.error(msg);
+  process.exit(1);
+}
+
 function enumerateMoves(state) {
   var moves = [];
-  var player = state.players[state.currentPlayerIndex];
+  var player = getCurrentPlayer(state);
 
   switch (state.state) {
     case STATE_ACTION:
       enumerateActionMoves(true);
       enumerateBuyMoves();
+      addEndTurn();
       break;
     case STATE_TREASURE:
       enumerateActionMoves(false);
       enumerateBuyMoves();
+      addEndTurn();
       break;
     case STATE_BUY:
       enumerateBuyMoves();
+      addEndTurn();
       break;
     default:
       throw new Error("invalid state");
   }
   return moves;
+
+  function addEndTurn() {
+    moves.push({ name: 'endTurn' });
+  }
 
   function enumerateActionMoves(includeNonTreasure) {
     var seenActions = {};
@@ -112,7 +160,7 @@ function enumerateMoves(state) {
 
 function doPlayCardMove(state, params) {
   var card = dominion.cardTable[params.card];
-  var player = state.players[state.currentPlayerIndex];
+  var player = getCurrentPlayer(state);
 
   if (card.treasure) {
     state.treasureCount += card.treasure;
@@ -155,19 +203,29 @@ function doBuyMove(state, params) {
   if (!gameCard) throw new Error("invalid card name");
   gameCard.count -= 1;
   if (gameCard.count < 0) throw new Error("invalid game card count");
-  var player = state.players[state.currentPlayerIndex];
+  var player = getCurrentPlayer(state);
   playerGainCard(state, player, gameCard.card);
   state.buyCount -= 1;
   if (state.buyCount < 0) throw new Error("invalid buy count");
   if (state.state === STATE_BUY && state.buyCount === 0) {
-    playerDiscardHand(state, player);
-    playerDraw(state, player, 5);
-    state.state = STATE_ACTION;
-    state.actionCount = 1;
-    state.buyCount = 1;
-    state.treasureCount = 0;
-    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    endTurn(state, player);
   }
+}
+
+function doEndTurn(state, params) {
+  var player = getCurrentPlayer(state);
+  endTurn(state, player);
+}
+
+function endTurn(state, player) {
+  playerDiscardHand(state, player);
+  playerDraw(state, player, 5);
+  state.state = STATE_ACTION;
+  state.actionCount = 1;
+  state.buyCount = 1;
+  state.treasureCount = 0;
+  state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+  state.turnIndex += 1;
 }
 
 function playerDiscardHand(state, player) {
@@ -186,7 +244,7 @@ function playerDraw(state, player, count) {
       while (player.discardPile.length > 0) {
         player.deck.push(player.discardPile.pop());
       }
-      shuffleArray(player.deck);
+      state.rng.shuffle(player.deck);
     }
     player.hand.push(player.deck.pop());
   }
@@ -202,13 +260,17 @@ function performMove(state, move) {
   fn(state, move.params);
 }
 
-function shuffleAndDeal(howManyPlayers) {
+function shuffleAndDeal(playerAiList, seed) {
+  var rng = new RNG(seed);
   var i;
   var players = [];
-  for (i = 0; i < howManyPlayers; i += 1) {
-    players.push(createPlayerState(i));
+  for (i = 0; i < playerAiList.length; i += 1) {
+    players.push(createPlayerState(i, playerAiList[i]));
   }
   var state = {
+    turnIndex: 0,
+    seed: seed,
+    rng: rng,
     currentPlayerIndex: 0,
     state: STATE_ACTION,
     actionCount: 1,
@@ -230,11 +292,11 @@ function shuffleAndDeal(howManyPlayers) {
 
   var kingdomCards = [];
   while (kingdomCards.length < 10) {
-    var setIndex = Math.floor(Math.random() * dominion.setList.length);
+    var setIndex = rng.integer(dominion.setList.length);
     var set = dominion.setList[setIndex];
     list = listOfCardsPerSet[set.name];
     if (list.length > 0) {
-      var listIndex = Math.floor(Math.random() * list.length);
+      var listIndex = rng.integer(list.length);
       card = list[listIndex];
       list.splice(listIndex, 1);
       kingdomCards.push(card);
@@ -259,13 +321,13 @@ function shuffleAndDeal(howManyPlayers) {
   function addCard(card) {
     var gameCard = {
       card: card,
-      count: card.supply[howManyPlayers],
+      count: card.supply[playerAiList.length],
     };
     state.cardTable[card.name] = gameCard;
     state.cardList.push(gameCard);
   }
 
-  function createPlayerState(playerIndex) {
+  function createPlayerState(playerIndex, ai) {
     var estateCard = getCard('Estate');
     var copperCard = getCard('Copper');
     var deck = [];
@@ -277,11 +339,12 @@ function shuffleAndDeal(howManyPlayers) {
     for (; i < 10; i += 1) {
       deck.push(estateCard);
     }
-    shuffleArray(deck);
+    rng.shuffle(deck);
     for (i = 0; i < 5; i += 1) {
       hand.push(deck.pop());
     }
     return {
+      ai: ai,
       index: playerIndex,
       deck: deck,
       hand: hand,
@@ -300,16 +363,33 @@ function printGameState(state) {
   for (i = 0; i < state.players.length; i += 1) {
     var player = state.players[i];
     var vp = calcVictoryPoints(state, player);
-    console.log(playerName(state, player.index) + " (" + vp + " victory points):");
+    console.log(playerName(player) + " (" + vp + " victory points):");
     console.log("       in play: " + deckToString(player.inPlay));
     console.log("          deck: " + deckToString(player.deck));
     console.log("          hand: " + deckToString(player.hand));
     console.log("  discard pile: " + deckToString(player.discardPile));
   }
-  console.log("Waiting for " + playerName(state, state.currentPlayerIndex) + " to " + stateIndexToString(state.state));
+  console.log("Waiting for " + playerName(getCurrentPlayer(state)) + " to " + stateIndexToString(state.state));
   console.log("Actions: " + state.actionCount +
            "   Buys: " + state.buyCount +
            "   Treasure: " + state.treasureCount);
+}
+
+function printPossibleMoves(moveList) {
+  console.log("Possible moves:");
+  for (var i = 0; i < moveList.length; i += 1) {
+    var move = moveList[i];
+    console.log("(" + (i + 1) + ") " + dominion.moveToString(move));
+  }
+  if (moveList.length === 0) {
+    console.log("(none)");
+  }
+}
+
+function getCurrentPlayer(state) {
+  var player = state.players[state.currentPlayerIndex];
+  if (!player) throw new Error("invalid player");
+  return player;
 }
 
 function calcVictoryPoints(state, player) {
@@ -351,8 +431,8 @@ function stateIndexToString(stateIndex) {
   }
 }
 
-function playerName(state, index) {
-  return "Player " + (index + 1);
+function playerName(player) {
+  return "Player " + (player.index + 1);
 }
 
 function deckToString(deck) {
@@ -370,8 +450,10 @@ function importAndProcessCards() {
     setList: [],
     cardTable: {},
     cardList: [],
+    isCardType: isCardType,
+    moveToString: moveToString,
   };
-  var cardsJson = require('./cards');
+  var cardsJson = require('./lib/cards');
 
   for (var cardName in cardsJson.cards) {
     var card = cardsJson.cards[cardName];
@@ -413,16 +495,6 @@ function compare(a, b){
     return -1;
   } else {
     return 1;
-  }
-}
-
-function shuffleArray(list) {
-  var counter = list.length;
-  while (counter) {
-    var index = Math.floor(Math.random() * counter--);
-    var temp = list[counter];
-    list[counter] = list[index];
-    list[index] = temp;
   }
 }
 
