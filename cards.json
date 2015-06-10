@@ -1,59 +1,12 @@
 {
-  "sets": {
-    "Base Set": {
-      "cards": {
-        "Copper": 60,
-        "Silver": 40,
-        "Gold": 30,
-        "Estate": 24,
-        "Duchy": 12,
-        "Province": 12,
-        "Curse": 30,
-        "Gardens": 12,
-        "Cellar": 10,
-        "Chapel": 10,
-        "Moat": 10,
-        "Chancellor": 10,
-        "Village": 10,
-        "Woodcutter": 10,
-        "Workshop": 10,
-        "Bureaucrat": 10,
-        "Feast": 10,
-        "Gardens": 10,
-        "Militia": 10,
-        "Moneylender": 10,
-        "Remodel": 10,
-        "Smithy": 10,
-        "Spy": 10,
-        "Thief": 10,
-        "Throne Room": 10,
-        "Council Room": 10,
-        "Festival": 10,
-        "Laboratory": 10,
-        "Library": 10,
-        "Market": 10,
-        "Mine": 10,
-        "Witch": 10,
-        "Adventurer": 10
-      },
-      "playerCountOverrides": {
-        "2": {
-          "Estate": 8,
-          "Duchy": 8,
-          "Province": 8,
-          "Curse": 10
-        },
-        "3": {
-          "Estate": 10,
-          "Duchy": 10,
-          "Province": 10,
-          "Curse": 20
-        }
-      }
-    }
-  },
   "cards": {
     "Copper": {
+      "supply": {
+        "2": 60,
+        "3": 60,
+        "4": 60
+      },
+      "includeCondition": "always",
       "cost": 0,
       "type": {
         "Treasure": true
@@ -61,6 +14,12 @@
       "treasure": 1
     },
     "Silver": {
+      "supply": {
+        "2": 40,
+        "3": 40,
+        "4": 40
+      },
+      "includeCondition": "always",
       "cost": 3,
       "type": {
         "Treasure": true
@@ -68,6 +27,12 @@
       "treasure": 2
     },
     "Gold": {
+      "supply": {
+        "2": 30,
+        "3": 30,
+        "4": 30
+      },
+      "includeCondition": "always",
       "cost": 6,
       "type": {
         "Treasure": true
@@ -75,6 +40,12 @@
       "treasure": 3
     },
     "Curse": {
+      "supply": {
+        "2": 10,
+        "3": 20,
+        "4": 30
+      },
+      "includeCondition": "always",
       "cost": 0,
       "type": {
         "Curse": true
@@ -89,6 +60,12 @@
       ]
     },
     "Estate": {
+      "supply": {
+        "2": 8,
+        "3": 10,
+        "4": 12
+      },
+      "includeCondition": "always",
       "cost": 2,
       "type": {
         "Victory": true
@@ -103,6 +80,12 @@
       ]
     },
     "Duchy": {
+      "supply": {
+        "2": 8,
+        "3": 10,
+        "4": 12
+      },
+      "includeCondition": "always",
       "cost": 5,
       "type": {
         "Victory": true
@@ -117,6 +100,12 @@
       ]
     },
     "Province": {
+      "supply": {
+        "2": 8,
+        "3": 10,
+        "4": 12
+      },
+      "includeCondition": "always",
       "cost": 8,
       "type": {
         "Victory": true
@@ -131,6 +120,13 @@
       ]
     },
     "Cellar": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 2,
       "type": {
         "Action": true
@@ -148,6 +144,13 @@
       ]
     },
     "Chapel": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 2,
       "type": {
         "Action": true
@@ -162,6 +165,13 @@
       ]
     },
     "Moat": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 2,
       "type": {
         "Action": true,
@@ -191,6 +201,13 @@
       ]
     },
     "Chancellor": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 3,
       "type": {
         "Action": true
@@ -209,6 +226,13 @@
       ]
     },
     "Village": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 3,
       "type": {
         "Action": true
@@ -229,6 +253,13 @@
       ]
     },
     "Woodcutter": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 3,
       "type": {
         "Action": true
@@ -249,6 +280,13 @@
       ]
     },
     "Workshop": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 3,
       "type": {
         "Action": true
@@ -263,6 +301,13 @@
       ]
     },
     "Bureaucrat": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true,
@@ -290,6 +335,13 @@
       ]
     },
     "Feast": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true
@@ -307,6 +359,13 @@
       ]
     },
     "Gardens": {
+      "supply": {
+        "2": 8,
+        "3": 10,
+        "4": 12
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Victory": true
@@ -322,6 +381,13 @@
       ]
     },
     "Militia": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true,
@@ -343,6 +409,13 @@
       ]
     },
     "Moneylender": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true
@@ -369,18 +442,39 @@
       ]
     },
     "Remodel": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true
       }
     },
     "Smithy": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true
       }
     },
     "Spy": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true,
@@ -388,6 +482,13 @@
       }
     },
     "Thief": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true,
@@ -395,48 +496,104 @@
       }
     },
     "Throne Room": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 4,
       "type": {
         "Action": true
       }
     },
     "Council Room": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Festival": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Laboratory": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Library": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Market": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Mine": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true
       }
     },
     "Witch": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 5,
       "type": {
         "Action": true,
@@ -444,6 +601,13 @@
       }
     },
     "Adventurer": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Base Set",
       "cost": 6,
       "type": {
         "Action": true
