@@ -226,6 +226,7 @@ function endTurn(state, player) {
   state.treasureCount = 0;
   state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
   state.turnIndex += 1;
+  if (state.currentPlayerIndex === 0) state.roundIndex += 1;
 }
 
 function playerDiscardHand(state, player) {
@@ -269,6 +270,7 @@ function shuffleAndDeal(playerAiList, seed) {
   }
   var state = {
     turnIndex: 0,
+    roundIndex: 0,
     seed: seed,
     rng: rng,
     currentPlayerIndex: 0,
@@ -355,6 +357,7 @@ function shuffleAndDeal(playerAiList, seed) {
 }
 
 function printGameState(state) {
+  console.log("Round " + (state.roundIndex + 1) + ", turn " + (state.turnIndex + 1));
   var i;
   for (i = 0; i < state.cardList.length; i += 1) {
     var card = state.cardList[i];
