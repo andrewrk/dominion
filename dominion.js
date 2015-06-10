@@ -1,6 +1,7 @@
 var dominion = importAndProcessCards();
 var nextState = 0;
 var STATE_ACTION = nextState++;
+var STATE_TREASURE = nextState++;
 var STATE_BUY = nextState++;
 var moveTable = {
   'playCard': doPlayCardMove,
@@ -62,7 +63,11 @@ function enumerateMoves(state) {
 
   switch (state.state) {
     case STATE_ACTION:
-      enumerateActionMoves();
+      enumerateActionMoves(true);
+      enumerateBuyMoves();
+      break;
+    case STATE_TREASURE:
+      enumerateActionMoves(false);
       enumerateBuyMoves();
       break;
     case STATE_BUY:
@@ -73,11 +78,11 @@ function enumerateMoves(state) {
   }
   return moves;
 
-  function enumerateActionMoves() {
+  function enumerateActionMoves(includeNonTreasure) {
     var seenActions = {};
     for (var i = 0; i < player.hand.length; i += 1) {
       var card = player.hand[i];
-      if (isCardType(card, 'Action') || isCardType(card, 'Treasure')) {
+      if ((includeNonTreasure && isCardType(card, 'Action')) || isCardType(card, 'Treasure')) {
         if (seenActions[card.name]) continue;
         seenActions[card.name] = true;
         moves.push({
@@ -107,12 +112,45 @@ function enumerateMoves(state) {
 
 function doPlayCardMove(state, params) {
   var card = dominion.cardTable[params.card];
+  var player = state.players[state.currentPlayerIndex];
 
-  state.actionCount -= 1;
-  // TODO
+  if (card.treasure) {
+    state.treasureCount += card.treasure;
+    if (state.state === STATE_ACTION) {
+      state.state = STATE_TREASURE;
+    }
+  }
+  if (isCardType(card, 'Action')) {
+    state.actionCount -= 1;
+  }
+  if (state.actionCount < 0) throw new Error("invalid action count");
+  if (state.actionCount === 0) {
+    state.state = STATE_BUY;
+  }
+
+  player.inPlay.push(removeCardFromHand(player, card.name));
+}
+
+function removeCardFromHand(player, cardName) {
+  var handIndex = findCardInHandIndex(player, cardName);
+  var card = player.hand[handIndex];
+  player.hand.splice(handIndex, 1);
+  return card;
+}
+
+function findCardInHandIndex(player, cardName) {
+  for (var i = 0; i < player.hand.length; i += 1) {
+    if (player.hand[i].name === cardName) {
+      return i;
+    }
+  }
+  throw new Error("card not found in hand: " + cardName);
 }
 
 function doBuyMove(state, params) {
+  if (state.state === STATE_ACTION || state.state === STATE_TREASURE) {
+    state.state = STATE_BUY;
+  }
   var gameCard = state.cardTable[params.card];
   if (!gameCard) throw new Error("invalid card name");
   gameCard.count -= 1;
@@ -121,7 +159,7 @@ function doBuyMove(state, params) {
   playerGainCard(state, player, gameCard.card);
   state.buyCount -= 1;
   if (state.buyCount < 0) throw new Error("invalid buy count");
-  if ((state.state === STATE_BUY || state.state === STATE_ACTION) && state.buyCount === 0) {
+  if (state.state === STATE_BUY && state.buyCount === 0) {
     playerDiscardHand(state, player);
     playerDraw(state, player, 5);
     state.state = STATE_ACTION;
@@ -303,7 +341,9 @@ function iterateAllPlayerCards(player, onCard) {
 function stateIndexToString(stateIndex) {
   switch (stateIndex) {
     case STATE_ACTION:
-      return "play an action or buy a card";
+      return "play an action, treasure, or buy a card";
+    case STATE_TREASURE:
+      return "play a treasure or buy a card";
     case STATE_BUY:
       return "buy a card";
     default:
