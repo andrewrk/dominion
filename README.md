@@ -1,3 +1,8 @@
-# Dominion cards.json
+# Dominion
 
-Attempting to contain the complete rules for Dominion in a single JSON file.
+Playing around with text-based Dominion card game.
+
+## TODO
+
+ * add log
+ * add initial state

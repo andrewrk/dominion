@@ -2,11 +2,59 @@ var dominion = importAndProcessCards();
 var nextState = 0;
 var STATE_ACTION = nextState++;
 var STATE_BUY = nextState++;
+var moveTable = {
+  'playCard': doPlayCardMove,
+  'buy': doBuyMove,
+};
+
+
+var readline = require('readline');
+var rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
 var state = shuffleAndDeal(2);
-printGameState(state);
-console.log("Possible moves:");
-console.log(enumerateMoves(state));
+
+userInputPrompt();
+
+function userInputPrompt() {
+  printGameState(state);
+  console.log("Possible moves:");
+  var moves = enumerateMoves(state);
+  for (var i = 0; i < moves.length; i += 1) {
+    var move = moves[i];
+    console.log("(" + (i + 1) + ") " + moveToString(move));
+  }
+  doPrompt();
+
+  function onUserInput(inputText) {
+    var choice = parseInt(inputText, 10);
+    var moveIndex = choice - 1;
+    if (isNaN(choice) || moveIndex < 0 || moveIndex >= moves.length) {
+      console.log("No.");
+      doPrompt();
+      return;
+    }
+    performMove(state, moves[moveIndex]);
+    userInputPrompt();
+  }
+
+  function doPrompt() {
+    rl.question("> ", onUserInput);
+  }
+}
+
+function moveToString(move) {
+  switch (move.name) {
+    case 'playCard':
+      return "Play " + move.params.card;
+    case 'buy':
+      return "Buy " + move.params.card;
+    default:
+      throw new Error("moveToString case missing: " + move.name);
+  }
+}
 
 function enumerateMoves(state) {
   var moves = [];
@@ -55,6 +103,65 @@ function enumerateMoves(state) {
       }
     }
   }
+}
+
+function doPlayCardMove(state, params) {
+  var card = dominion.cardTable[params.card];
+
+  state.actionCount -= 1;
+  // TODO
+}
+
+function doBuyMove(state, params) {
+  var gameCard = state.cardTable[params.card];
+  if (!gameCard) throw new Error("invalid card name");
+  gameCard.count -= 1;
+  if (gameCard.count < 0) throw new Error("invalid game card count");
+  var player = state.players[state.currentPlayerIndex];
+  playerGainCard(state, player, gameCard.card);
+  state.buyCount -= 1;
+  if (state.buyCount < 0) throw new Error("invalid buy count");
+  if ((state.state === STATE_BUY || state.state === STATE_ACTION) && state.buyCount === 0) {
+    playerDiscardHand(state, player);
+    playerDraw(state, player, 5);
+    state.state = STATE_ACTION;
+    state.actionCount = 1;
+    state.buyCount = 1;
+    state.treasureCount = 0;
+    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+  }
+}
+
+function playerDiscardHand(state, player) {
+  while (player.inPlay.length > 0) {
+    player.discardPile.push(player.inPlay.pop());
+  }
+  while (player.hand.length > 0) {
+    player.discardPile.push(player.hand.pop());
+  }
+}
+
+function playerDraw(state, player, count) {
+  for (var i = 0; i < count; i += 1) {
+    if (player.deck.length === 0) {
+      if (player.discardPile.length === 0) return;
+      while (player.discardPile.length > 0) {
+        player.deck.push(player.discardPile.pop());
+      }
+      shuffleArray(player.deck);
+    }
+    player.hand.push(player.deck.pop());
+  }
+}
+
+function playerGainCard(state, player, card) {
+  player.discardPile.push(card);
+}
+
+function performMove(state, move) {
+  var fn = moveTable[move.name];
+  if (!fn) throw new Error("illegal move");
+  fn(state, move.params);
 }
 
 function shuffleAndDeal(howManyPlayers) {
@@ -140,6 +247,8 @@ function shuffleAndDeal(howManyPlayers) {
       index: playerIndex,
       deck: deck,
       hand: hand,
+      discardPile: [],
+      inPlay: [],
     };
   }
 }
@@ -152,11 +261,54 @@ function printGameState(state) {
   }
   for (i = 0; i < state.players.length; i += 1) {
     var player = state.players[i];
-    console.log(playerName(state, player.index) + ":");
-    console.log("  deck: " + deckToString(player.deck));
-    console.log("  hand: " + deckToString(player.hand));
+    var vp = calcVictoryPoints(state, player);
+    console.log(playerName(state, player.index) + " (" + vp + " victory points):");
+    console.log("       in play: " + deckToString(player.inPlay));
+    console.log("          deck: " + deckToString(player.deck));
+    console.log("          hand: " + deckToString(player.hand));
+    console.log("  discard pile: " + deckToString(player.discardPile));
   }
-  console.log("Waiting for " + playerName(state, state.currentPlayerIndex));
+  console.log("Waiting for " + playerName(state, state.currentPlayerIndex) + " to " + stateIndexToString(state.state));
+  console.log("Actions: " + state.actionCount +
+           "   Buys: " + state.buyCount +
+           "   Treasure: " + state.treasureCount);
+}
+
+function calcVictoryPoints(state, player) {
+  var vp = 0;
+  iterateAllPlayerCards(player, onCard);
+  return vp;
+  function onCard(card) {
+    if (!card.victory) return;
+    for (var i = 0; i < card.victory.length; i += 1) {
+      var victoryObj = card.victory[i];
+      if (victoryObj.type === 'constant') {
+        var value = parseInt(victoryObj.params.value, 10);
+        if (isNaN(value)) throw new Error("invalid victory point value");
+        vp += value;
+      } else {
+        throw new Error("invalid victory type: " + victoryObj.type);
+      }
+    }
+  }
+}
+
+function iterateAllPlayerCards(player, onCard) {
+  player.deck.forEach(onCard);
+  player.discardPile.forEach(onCard);
+  player.hand.forEach(onCard);
+  player.inPlay.forEach(onCard);
+}
+
+function stateIndexToString(stateIndex) {
+  switch (stateIndex) {
+    case STATE_ACTION:
+      return "play an action or buy a card";
+    case STATE_BUY:
+      return "buy a card";
+    default:
+      throw new Error("missing stateIndexToString for " + stateIndex);
+  }
 }
 
 function playerName(state, index) {
