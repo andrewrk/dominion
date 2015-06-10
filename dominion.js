@@ -4,10 +4,57 @@ var STATE_ACTION = nextState++;
 var STATE_BUY = nextState++;
 
 var state = shuffleAndDeal(2);
-console.log(enumerateMoves(state));
 printGameState(state);
+console.log("Possible moves:");
+console.log(enumerateMoves(state));
 
 function enumerateMoves(state) {
+  var moves = [];
+  var player = state.players[state.currentPlayerIndex];
+
+  switch (state.state) {
+    case STATE_ACTION:
+      enumerateActionMoves();
+      enumerateBuyMoves();
+      break;
+    case STATE_BUY:
+      enumerateBuyMoves();
+      break;
+    default:
+      throw new Error("invalid state");
+  }
+  return moves;
+
+  function enumerateActionMoves() {
+    var seenActions = {};
+    for (var i = 0; i < player.hand.length; i += 1) {
+      var card = player.hand[i];
+      if (isCardType(card, 'Action') || isCardType(card, 'Treasure')) {
+        if (seenActions[card.name]) continue;
+        seenActions[card.name] = true;
+        moves.push({
+          name: 'playCard',
+          params: {
+            card: card.name,
+          },
+        });
+      }
+    }
+  }
+
+  function enumerateBuyMoves() {
+    for (var i = 0; i < state.cardList.length; i += 1) {
+      var gameCard = state.cardList[i];
+      if (gameCard.count > 0 && state.treasureCount >= gameCard.card.cost) {
+        moves.push({
+          name: 'buy',
+          params: {
+            card: gameCard.card.name,
+          },
+        });
+      }
+    }
+  }
 }
 
 function shuffleAndDeal(howManyPlayers) {
@@ -18,8 +65,8 @@ function shuffleAndDeal(howManyPlayers) {
   }
   var state = {
     currentPlayerIndex: 0,
-    state: STATE_BUY,
-    actionCount: 0,
+    state: STATE_ACTION,
+    actionCount: 1,
     buyCount: 1,
     treasureCount: 0,
     cardList: [],
@@ -101,17 +148,19 @@ function printGameState(state) {
   var i;
   for (i = 0; i < state.cardList.length; i += 1) {
     var card = state.cardList[i];
-    console.log("(" + card.card.cost + ") " + card.card.name + " x" + card.count);
+    console.log("(" + card.card.cost + ") x" + card.count + " " + card.card.name);
   }
   for (i = 0; i < state.players.length; i += 1) {
-    printPlayerState(state.players[i]);
-  }
-
-  function printPlayerState(player) {
-    console.log("Player " + (player.index + 1) + ":");
+    var player = state.players[i];
+    console.log(playerName(state, player.index) + ":");
     console.log("  deck: " + deckToString(player.deck));
     console.log("  hand: " + deckToString(player.hand));
   }
+  console.log("Waiting for " + playerName(state, state.currentPlayerIndex));
+}
+
+function playerName(state, index) {
+  return "Player " + (index + 1);
 }
 
 function deckToString(deck) {
@@ -189,4 +238,8 @@ function getCard(name) {
   var card = dominion.cardTable[name];
   if (!card) throw new Error("card not found: " + name);
   return card;
+}
+
+function isCardType(card, typeName) {
+  return !!card.type[typeName];
 }
