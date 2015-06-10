@@ -32,8 +32,8 @@ function mainLoop(state) {
   function onMoveChosen(err, move) {
     if (err) throw err;
     if (!move) throw new Error("invalid move");
-    performMove(state, move);
     console.log(playerName(player) + " chooses: " + moveToString(move));
+    performMove(state, move);
     setImmediate(function() {
       mainLoop(state);
     });
@@ -217,9 +217,62 @@ function doEndTurn(state, params) {
   endTurn(state, player);
 }
 
+function checkEndOfGame(state) {
+  var pilesEmpty = 0;
+  var provinceGone = false;
+  var i;
+  for (i = 0; i < state.cardList.length; i += 1) {
+    var gameCard = state.cardList[i];
+    if (gameCard.count === 0) {
+      pilesEmpty += 1;
+      if (gameCard.card.name === 'Province') {
+        provinceGone = true;
+      }
+    }
+  }
+  if (pilesEmpty < 3 && !provinceGone) {
+    return;
+  }
+
+  var player;
+  for (i = 0; i < state.players.length; i += 1) {
+    player = state.players[i];
+    player.vp = calcVictoryPoints(state, player);
+    player.turnCount = state.roundIndex + 1;
+    if (state.currentPlayerIndex < player.index) player.turnCount -= 1;
+  }
+  state.players.sort(compareVpThenTurns);
+  var nextRank = 1;
+  var prev = null;
+  for (i = 0; i < state.players.length; i += 1) {
+    player = state.players[i];
+    if (prev) {
+      if (compareVpThenTurns(player, prev) !== 0) {
+        nextRank += 1;
+      }
+    }
+    player.rank = nextRank;
+    prev = player;
+  }
+  for (i = 0; i < state.players.length; i += 1) {
+    player = state.players[i];
+    console.log(player.rank + " " + playerName(player) + " VP: " + player.vp + " turns: " + player.turnCount);
+  }
+
+  process.exit(0);
+
+  function compareVpThenTurns(a, b) {
+    var cmp = compare(b.vp, a.vp);
+    return (cmp === 0) ? compare(a.turnCount, b.turnCount) : cmp;
+  }
+}
+
 function endTurn(state, player) {
   playerDiscardHand(state, player);
   playerDraw(state, player, 5);
+
+  checkEndOfGame(state);
+
   state.state = STATE_ACTION;
   state.actionCount = 1;
   state.buyCount = 1;
