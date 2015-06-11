@@ -22,6 +22,7 @@ var effectTable = {
   'discardThenDraw': doDiscardThenDraw,
   'gainCard': doGainCardEffect,
   'attackPutCardsOnDeck': doAttackPutCardsOnDeck,
+  'trashThisCard': doTrashThisCardEffect,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -270,20 +271,28 @@ function playerHandTreasureCardCount(state, player) {
   return count;
 }
 
-function removeCardFromHand(player, cardName) {
-  var handIndex = findCardInHandIndex(player, cardName);
-  var card = player.hand[handIndex];
-  player.hand.splice(handIndex, 1);
+function removeCardFromList(list, cardName) {
+  var index = findCardInList(list, cardName);
+  var card = list[index];
+  list.splice(index, 1);
   return card;
 }
 
-function findCardInHandIndex(player, cardName) {
-  for (var i = 0; i < player.hand.length; i += 1) {
-    if (player.hand[i].name === cardName) {
+function removeCardFromInPlay(player, cardName) {
+  return removeCardFromList(player.inPlay, cardName);
+}
+
+function removeCardFromHand(player, cardName) {
+  return removeCardFromList(player.hand, cardName);
+}
+
+function findCardInList(list, cardName) {
+  for (var i = 0; i < list.length; i += 1) {
+    if (list[i].name === cardName) {
       return i;
     }
   }
-  throw new Error("card not found in hand: " + cardName);
+  throw new Error("card not found: " + cardName);
 }
 
 function doBuyMove(state, params) {
@@ -467,6 +476,7 @@ function shuffleAndDeal(playerAiList, seed) {
     treasureCount: 0,
     cardList: [],
     cardTable: {},
+    trash: [],
     players: players,
     stateStack: [],
     discardCount: 0,
@@ -552,17 +562,18 @@ function printGameState(state) {
   console.log("Round " + (state.roundIndex + 1) + ", turn " + (state.turnIndex + 1));
   var i;
   for (i = 0; i < state.cardList.length; i += 1) {
-    var card = state.cardList[i];
-    console.log("(" + card.card.cost + ") x" + card.count + " " + card.card.name);
+    var gameCard = state.cardList[i];
+    console.log("(" + gameCard.card.cost + ") " + gameCard.count + "_" + gameCard.card.name);
   }
+  console.log("Trash: " + deckToString(state.trash, true));
   for (i = 0; i < state.players.length; i += 1) {
     var player = state.players[i];
     var vp = calcVictoryPoints(state, player);
     console.log(playerName(player) + " (" + vp + " victory points):");
-    console.log("       in play: " + deckToString(player.inPlay));
-    console.log("          deck: " + deckToString(player.deck));
-    console.log("          hand: " + deckToString(player.hand));
-    console.log("  discard pile: " + deckToString(player.discardPile));
+    console.log("       in play: " + deckToString(player.inPlay, false));
+    console.log("          deck: " + deckToString(player.deck, true));
+    console.log("          hand: " + deckToString(player.hand, true));
+    console.log("  discard pile: " + deckToString(player.discardPile, true));
   }
   console.log("Waiting for " + playerName(getCurrentPlayer(state)) + " to " + stateIndexToString(state.state));
   console.log("Actions: " + state.actionCount +
@@ -634,9 +645,25 @@ function playerName(player) {
   return "Player " + (player.index + 1);
 }
 
-function deckToString(deck) {
+function deckToString(deck, compress) {
   if (deck.length === 0) return "(empty)";
-  return deck.map(getCardName).join(" ");
+  if (!compress) {
+    return deck.map(getCardName).join(" ");
+  }
+  var counts = {};
+  for (var i = 0; i < deck.length; i += 1) {
+    var card = deck[i];
+    counts[card.name] = (counts[card.name] == null) ? 1 : (counts[card.name] + 1);
+  }
+  var names = Object.keys(counts);
+  names.sort(compare);
+  for (i = 0; i < names.length; i += 1) {
+    var count = counts[names[i]];
+    if (count > 1) {
+      names[i] = counts[names[i]] + "_" + names[i];
+    }
+  }
+  return names.join(" ");
 }
 
 function getCardName(card) {
@@ -768,6 +795,10 @@ function getMatchingCards(state, query) {
 
 function doAttackPutCardsOnDeck(state, player, card, params) {
   throw new Error("TODO");
+}
+
+function doTrashThisCardEffect(state, player, card, params) {
+  state.trash.push(removeCardFromInPlay(player, card.name));
 }
 
 function doPlusAction(state, player, card, params) {

@@ -67,7 +67,6 @@ Round 1, turn 1
    - Chapel
    - Chancellor
    - ~Bureaucrat
-   - Feast
    - Gardens
    - ~Militia
    - Moneylender
