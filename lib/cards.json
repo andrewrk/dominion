@@ -185,20 +185,17 @@
           }
         }
       ],
-      "conditions": [
-        {
-          "name": "onAttack",
-          "optional": true,
-          "effects": [
-            {
-              "name": "revealThisCard"
-            },
-            {
-              "name": "unaffectedByAttack"
-            }
-          ]
-        }
-      ]
+      "condition": {
+        "name": "onAttack",
+        "effects": [
+          {
+            "name": "revealThisCard"
+          },
+          {
+            "name": "unaffectedByAttack"
+          }
+        ]
+      }
     },
     "Chancellor": {
       "supply": {

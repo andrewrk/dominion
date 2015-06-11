@@ -8,6 +8,7 @@ var STATE_DISCARD_THEN_DRAW = nextState++;
 var STATE_GAIN_CARD = nextState++;
 var STATE_PUT_CARDS_ON_DECK = nextState++;
 var STATE_TRASH = nextState++;
+var STATE_REACTION = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
@@ -18,6 +19,8 @@ var moveTable = {
   'putOnDeck': doPutCardOnDeckMove,
   'trash': doTrashMove,
   'doneTrashing': doDoneTrashingMove,
+  'reaction': doReactionMove,
+  'doneReacting': doDoneReactingMove,
 };
 var effectTable = {
   'plusAction': doPlusAction,
@@ -30,6 +33,8 @@ var effectTable = {
   'trashThisCard': doTrashThisCardEffect,
   'revealHand': doRevealHandEffect,
   'trashUpTo': doTrashUpToEffect,
+  'revealThisCard': doRevealThisCardEffect,
+  'unaffectedByAttack': doUnaffectedByAttackEffect,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -86,6 +91,10 @@ function moveToString(move) {
       return "Trash " + move.params.card;
     case 'doneTrashing':
       return "Done trashing";
+    case 'reaction':
+      return "Activate " + move.params.card;
+    case 'doneReacting':
+      return "Done playing reactions";
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
@@ -167,10 +176,30 @@ function enumerateMoves(state) {
     case STATE_TRASH:
       addTrashMoves();
       break;
+    case STATE_REACTION:
+      addReactionMoves();
+      break;
     default:
       throw new Error("invalid state");
   }
   return moves;
+
+  function addReactionMoves() {
+    moves.push({name: 'doneReacting'});
+    var reactionCardNames = {};
+    for (var i = 0; i < state.playableReactionCards.length; i += 1) {
+      var card = state.playableReactionCards[i];
+      reactionCardNames[card.name] = true;
+    }
+    for (var reactionCardName in reactionCardNames) {
+      moves.push({
+        name: 'reaction',
+        params: {
+          card: reactionCardName,
+        },
+      });
+    }
+  }
 
   function addTrashMoves() {
     var seenActions = {};
@@ -289,17 +318,17 @@ function doPlayCardMove(state, params) {
   if (card.effects) {
     for (var i = 0; i < card.effects.length; i += 1) {
       var effect = card.effects[i];
-      doEffect(state, player, card, effect);
+      doEffect(state, player, card, player.inPlay, effect);
     }
   }
 
   checkActionsOver(state, player);
 }
 
-function doEffect(state, player, card, effect) {
+function doEffect(state, player, card, cardLocationList, effect) {
     var fn = effectTable[effect.name];
     if (!fn) throw new Error("unrecognized effect: " + effect.name);
-    fn(state, player, card, effect.params);
+    fn(state, player, card, cardLocationList, effect.params);
 }
 
 function handleNextPutCardsOnDeck(state) {
@@ -311,7 +340,7 @@ function handleNextPutCardsOnDeck(state) {
     state.putCardsOnDeckCount = 0;
     var elseClause = state.putCardsOnDeckElse;
     if (elseClause) {
-      doEffect(state, player, null, elseClause);
+      doEffect(state, player, null, null, elseClause);
       checkActionsOver(state, player);
     } else {
       popState(state);
@@ -325,6 +354,10 @@ function handleNextPutCardsOnDeck(state) {
 }
 
 function checkActionsOver(state, player) {
+  if (state.isAttack && state.unaffectedByAttack) {
+    popState(state);
+    return;
+  }
   if (state.state === STATE_PUT_CARDS_ON_DECK) {
     handleNextPutCardsOnDeck(state);
     return;
@@ -447,6 +480,20 @@ function doTrashMove(state, params) {
 }
 
 function doDoneTrashingMove(state, params) {
+  popState(state);
+}
+
+function doReactionMove(state, params) {
+  var player = getCurrentPlayer(state);
+  var card = removeCardFromList(state.playableReactionCards, params.card);
+  for (var i = 0; i < card.condition.effects.length; i += 1) {
+    var effect = card.condition.effects[i];
+    doEffect(state, player, card, player.hand, effect);
+  }
+  checkActionsOver(state, player);
+}
+
+function doDoneReactingMove(state, params) {
   popState(state);
 }
 
@@ -593,6 +640,9 @@ function shuffleAndDeal(playerAiList, seed) {
     putCardsOnDeckElse: null,
     waitingOnPlayerIndex: -1,
     trashActionsLeft: 0,
+    isAttack: false,
+    unaffectedByAttack: false,
+    playableReactionCards: [],
   };
 
   var listOfCardsPerSet = {};
@@ -680,7 +730,8 @@ function printGameState(state) {
   for (i = 0; i < state.players.length; i += 1) {
     var player = state.players[i];
     var vp = calcVictoryPoints(state, player);
-    console.log(playerName(player) + " (" + vp + " victory points):");
+    var cardCount = playerCardCount(state, player);
+    console.log(playerName(player) + " (" + vp + " victory points, " + cardCount + " cards):");
     console.log("       in play: " + deckToString(player.inPlay, false));
     console.log("          deck: " + deckToString(player.deck, true));
     console.log("          hand: " + deckToString(player.hand, true));
@@ -708,6 +759,10 @@ function getCurrentPlayer(state) {
   var player = state.players[index];
   if (!player) throw new Error("invalid player");
   return player;
+}
+
+function playerCardCount(state, player) {
+  return player.hand.length + player.inPlay.length + player.deck.length + player.discardPile.length;
 }
 
 function calcVictoryPoints(state, player) {
@@ -752,6 +807,8 @@ function stateIndexToString(stateIndex) {
       return "put on deck a card";
     case STATE_TRASH:
       return "trash a card";
+    case STATE_REACTION:
+      return "play a reaction";
     default:
       throw new Error("missing stateIndexToString for " + stateIndex);
   }
@@ -861,6 +918,9 @@ function pushState(state, newStateIndex) {
     putCardsOnDeckElse: state.putCardsOnDeckElse,
     waitingOnPlayerIndex: state.waitingOnPlayerIndex,
     trashActionsLeft: state.trashActionsLeft,
+    isAttack: state.isAttack,
+    unaffectedByAttack: state.unaffectedByAttack,
+    playableReactionCards: state.playableReactionCards,
   });
   state.state = newStateIndex;
 }
@@ -877,16 +937,19 @@ function popState(state, newStateIndex) {
   state.putCardsOnDeckElse = o.putCardsOnDeckElse;
   state.waitingOnPlayerIndex = o.waitingOnPlayerIndex;
   state.trashActionsLeft = o.trashActionsLeft;
+  state.isAttack = o.isAttack;
+  state.unaffectedByAttack = o.unaffectedByAttack;
+  state.playableReactionCards = o.playableReactionCards;
   var player = getCurrentPlayer(state);
   checkActionsOver(state, player);
 }
 
-function doDiscardThenDraw(state, player, card, params) {
+function doDiscardThenDraw(state, player, card, cardLocationList, params) {
   if (state.discardCount !== 0) throw new Error("unexpected discardCount value");
   pushState(state, STATE_DISCARD_THEN_DRAW);
 }
 
-function doGainCardEffect(state, player, card, params) {
+function doGainCardEffect(state, player, card, cardLocationList, params) {
   var matchingCards = getMatchingCards(state, {
     costingUpTo: params.costingUpTo,
     name: params.name,
@@ -948,45 +1011,76 @@ function getMatchingCards(state, query) {
   return results;
 }
 
-function doAttackPutCardsOnDeck(state, player, card, params) {
+function doAttackPutCardsOnDeck(state, player, card, cardLocationList, params) {
   for (var i = 0; i < state.players.length - 1; i += 1) {
     pushState(state, STATE_PUT_CARDS_ON_DECK);
     state.waitingOnPlayerIndex = euclideanMod(state.currentPlayerIndex - i - 1, state.players.length);
     state.putCardsOnDeckType = params.type;
     state.putCardsOnDeckCount = params.count;
     state.putCardsOnDeckElse = params['else'];
+    attackPlayer(state, state.players[state.waitingOnPlayerIndex]);
   }
 }
 
-function doTrashThisCardEffect(state, player, card, params) {
-  state.trash.push(removeCardFromInPlay(player, card.name));
+function attackPlayer(state, victimPlayer) {
+  state.isAttack = true;
+  triggerCondition(state, victimPlayer, 'onAttack');
 }
 
-function doRevealHandEffect(state, player, card, params) {
+function triggerCondition(state, player, conditionName) {
+  var playableReactionCards = [];
+  for (var cardI = 0; cardI < player.hand.length; cardI += 1) {
+    var card = player.hand[cardI];
+    if (!card.condition) continue;
+    if (card.condition.name === conditionName) {
+      playableReactionCards.push(card);
+      break;
+    }
+  }
+  if (playableReactionCards.length > 0) {
+    pushState(state, STATE_REACTION);
+    state.playableReactionCards = playableReactionCards;
+  }
+}
+
+function doTrashThisCardEffect(state, player, card, cardLocationList, params) {
+  state.trash.push(removeCardFromList(cardLocationList, card.name));
+}
+
+function doRevealHandEffect(state, player, card, cardLocationList, params) {
   console.log(playerName(player) + " reveals hand");
 }
 
-function doTrashUpToEffect(state, player, card, params) {
+function doTrashUpToEffect(state, player, card, cardLocationList, params) {
   pushState(state, STATE_TRASH);
   state.trashActionsLeft = params.amount;
 }
 
-function doPlusAction(state, player, card, params) {
+function doRevealThisCardEffect(state, player, card, cardLocationList, params) {
+  console.log(playerName(player) + " reveals " + card.name);
+}
+
+function doUnaffectedByAttackEffect(state, player, card, cardLocationList, params) {
+  var prevStackFrame = state.stateStack[state.stateStack.length - 1];
+  prevStackFrame.unaffectedByAttack = true;
+}
+
+function doPlusAction(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
   state.actionCount += params.amount;
 }
 
-function doPlusTreasure(state, player, card, params) {
+function doPlusTreasure(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
   state.treasureCount += params.amount;
 }
 
-function doPlusBuy(state, player, card, params) {
+function doPlusBuy(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
   state.buyCount += params.amount;
 }
 
-function doPlusCard(state, player, card, params) {
+function doPlusCard(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
   playerDraw(state, player, params.amount);
 }
