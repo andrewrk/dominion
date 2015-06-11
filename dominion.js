@@ -9,6 +9,7 @@ var STATE_GAIN_CARD = nextState++;
 var STATE_PUT_CARDS_ON_DECK = nextState++;
 var STATE_TRASH = nextState++;
 var STATE_REACTION = nextState++;
+var STATE_DISCARD_DECK = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
@@ -21,6 +22,8 @@ var moveTable = {
   'doneTrashing': doDoneTrashingMove,
   'reaction': doReactionMove,
   'doneReacting': doDoneReactingMove,
+  'discardDeck': doDiscardDeckMove,
+  'noDiscardDeck': doNotDiscardDeckMove,
 };
 var effectTable = {
   'plusAction': doPlusAction,
@@ -35,6 +38,7 @@ var effectTable = {
   'trashUpTo': doTrashUpToEffect,
   'revealThisCard': doRevealThisCardEffect,
   'unaffectedByAttack': doUnaffectedByAttackEffect,
+  'discardDeck': doDiscardDeckEffect,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -98,6 +102,10 @@ function moveToString(move) {
       return "Activate " + move.params.card;
     case 'doneReacting':
       return "Done playing reactions";
+    case 'discardDeck':
+      return "Discard deck";
+    case 'noDiscardDeck':
+      return "Do not discard deck";
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
@@ -182,10 +190,18 @@ function enumerateMoves(state) {
     case STATE_REACTION:
       addReactionMoves();
       break;
+    case STATE_DISCARD_DECK:
+      addDiscardDeckMoves();
+      break;
     default:
       throw new Error("invalid state");
   }
   return moves;
+
+  function addDiscardDeckMoves() {
+    moves.push({name: 'discardDeck'});
+    moves.push({name: 'noDiscardDeck'});
+  }
 
   function addReactionMoves() {
     moves.push({name: 'doneReacting'});
@@ -497,6 +513,18 @@ function doReactionMove(state, params) {
 }
 
 function doDoneReactingMove(state, params) {
+  popState(state);
+}
+
+function doDiscardDeckMove(state, params) {
+  var player = getCurrentPlayer(state);
+  while (player.deck.length > 0) {
+    player.discardPile.push(player.deck.pop());
+  }
+  popState(state);
+}
+
+function doNotDiscardDeckMove(state, params) {
   popState(state);
 }
 
@@ -812,6 +840,8 @@ function stateIndexToString(stateIndex) {
       return "trash a card";
     case STATE_REACTION:
       return "play a reaction";
+    case STATE_DISCARD_DECK:
+      return "choose whether to discard deck";
     default:
       throw new Error("missing stateIndexToString for " + stateIndex);
   }
@@ -1067,6 +1097,10 @@ function doRevealThisCardEffect(state, player, card, cardLocationList, params) {
 function doUnaffectedByAttackEffect(state, player, card, cardLocationList, params) {
   var prevStackFrame = state.stateStack[state.stateStack.length - 1];
   prevStackFrame.unaffectedByAttack = true;
+}
+
+function doDiscardDeckEffect(state, player, card, cardLocationList, params) {
+  pushState(state, STATE_DISCARD_DECK);
 }
 
 function doPlusAction(state, player, card, cardLocationList, params) {
