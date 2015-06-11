@@ -110,7 +110,7 @@ function processCommandLineArgs() {
 }
 
 function argParseError(msg) {
-  console.error("Usage: " + process.argv[0] + " " + process.argv[1] + " [--player <AI_Name>]");
+  console.error("Usage: " + process.argv[0] + " " + process.argv[1] + " [--player <AI_Name>] [--seed <seed>]");
   console.error("AIs available: " + Object.keys(ais).join(" "));
   console.error(msg);
   process.exit(1);
