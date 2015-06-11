@@ -324,9 +324,7 @@
         {
           "name": "attackPutCardsOnDeck",
           "params": {
-            "type": {
-              "Victory": true
-            },
+            "type": "Victory",
             "count": 1,
             "else": {
               "name": "revealHand"
