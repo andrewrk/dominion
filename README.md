@@ -59,34 +59,26 @@ Round 1, turn 1
 
  * You can choose CLI to play a command line interface game against an AI.
  * [Big Money strategy](http://wiki.dominionstrategy.com/index.php/Big_Money) is implemented.
- * Basic Victory cards and Treasure cards are implement.
- * Cellar is implemented.
 
 ## TODO
 
  * Base Set
    - Chapel
-   - Moat
    - Chancellor
-   - Village
-   - Woodcutter
    - Workshop
-   - Bureaucrat
+   - ~Bureaucrat
    - Feast
    - Gardens
-   - Militia
+   - ~Militia
    - Moneylender
-   - Remodel
+   - ~Remodel
    - Spy
-   - Thief
-   - Throne Room
+   - ~Thief
+   - ~Throne Room
    - Council Room
-   - Festival
-   - Laboratory
    - Library
-   - Market
    - Mine
-   - Witch
+   - ~Witch
    - Adventurer
  * Add log and initial state so that we can completely reproduce a game
  * Web server so players can play each other or AIs.

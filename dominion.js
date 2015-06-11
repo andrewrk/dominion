@@ -271,6 +271,7 @@ function doBuyMove(state, params) {
   var player = getCurrentPlayer(state);
   playerGainCard(state, player, gameCard.card);
   state.buyCount -= 1;
+  state.treasureCount -= gameCard.card.cost;
   if (state.buyCount < 0) throw new Error("invalid buy count");
   if (state.state === STATE_BUY && state.buyCount === 0) {
     endTurn(state, player);

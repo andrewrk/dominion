@@ -466,7 +466,15 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 3
+          }
+        }
+      ]
     },
     "Spy": {
       "supply": {
@@ -533,7 +541,27 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "plusBuy",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 2
+          }
+        }
+      ]
     },
     "Laboratory": {
       "supply": {
@@ -546,7 +574,21 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
     },
     "Library": {
       "supply": {
@@ -572,7 +614,33 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusBuy",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
     },
     "Mine": {
       "supply": {
