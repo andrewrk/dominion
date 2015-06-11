@@ -5,12 +5,14 @@ var STATE_ACTION = nextState++;
 var STATE_TREASURE = nextState++;
 var STATE_BUY = nextState++;
 var STATE_DISCARD_THEN_DRAW = nextState++;
+var STATE_GAIN_CARD = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
   'endTurn': doEndTurn,
   'discard': doDiscardMove,
   'doneDiscarding': doDoneDiscardingMove,
+  'gain': doGainCardMove,
 };
 var effectTable = {
   'plusAction': doPlusAction,
@@ -18,6 +20,8 @@ var effectTable = {
   'plusTreasure': doPlusTreasure,
   'plusCard': doPlusCard,
   'discardThenDraw': doDiscardThenDraw,
+  'gainCard': doGainCardEffect,
+  'attackPutCardsOnDeck': doAttackPutCardsOnDeck,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -66,6 +70,8 @@ function moveToString(move) {
       return "Discard " + move.params.card;
     case 'doneDiscarding':
       return "Done discarding";
+    case 'gain':
+      return "Gain " + move.params.card;
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
@@ -138,10 +144,30 @@ function enumerateMoves(state) {
     case STATE_DISCARD_THEN_DRAW:
       addDiscardMoves();
       break;
+    case STATE_GAIN_CARD:
+      addGainCardMoves();
+      break;
     default:
       throw new Error("invalid state");
   }
   return moves;
+
+  function addGainCardMoves() {
+    var matchingCards = getMatchingCards(state, {
+      costingUpTo: state.gainCardCostingUpTo,
+      name: state.gainCardName,
+      countGreaterEqual: 1,
+    });
+    for (var i = 0; i < matchingCards.length; i += 1) {
+      var gameCard = matchingCards[i];
+      moves.push({
+        name: 'gain',
+        params: {
+          card: gameCard.card.name,
+        },
+      });
+    }
+  }
 
   function addEndTurn() {
     moves.push({ name: 'endTurn' });
@@ -265,11 +291,8 @@ function doBuyMove(state, params) {
     state.state = STATE_BUY;
   }
   var gameCard = state.cardTable[params.card];
-  if (!gameCard) throw new Error("invalid card name");
-  gameCard.count -= 1;
-  if (gameCard.count < 0) throw new Error("invalid game card count");
   var player = getCurrentPlayer(state);
-  playerGainCard(state, player, gameCard.card);
+  playerGainCard(state, player, gameCard, false);
   state.buyCount -= 1;
   state.treasureCount -= gameCard.card.cost;
   if (state.buyCount < 0) throw new Error("invalid buy count");
@@ -300,6 +323,19 @@ function doDoneDiscardingMove(state, params) {
   playerDraw(state, player, state.discardCount);
   state.discardCount = 0;
   popState(state);
+}
+
+function doGainCardMove(state, params) {
+  var player = getCurrentPlayer(state);
+  switch (state.state) {
+    case STATE_GAIN_CARD:
+      var gameCard = state.cardTable[params.card];
+      playerGainCard(state, player, gameCard, state.gainCardOnTopOfDeck);
+      popState(state);
+      break;
+    default:
+      throw new Error("unexpected state: " + stateIndexToString(state.state));
+  }
 }
 
 function playerDiscardCardName(state, player, cardName) {
@@ -395,8 +431,15 @@ function playerDraw(state, player, count) {
   }
 }
 
-function playerGainCard(state, player, card) {
-  player.discardPile.push(card);
+function playerGainCard(state, player, gameCard, topOfDeck) {
+  if (!gameCard) throw new Error("invalid card name");
+  gameCard.count -= 1;
+  if (gameCard.count < 0) throw new Error("invalid game card count");
+  if (topOfDeck) {
+    player.deck.push(gameCard.card);
+  } else {
+    player.discardPile.push(gameCard.card);
+  }
 }
 
 function performMove(state, move) {
@@ -425,8 +468,10 @@ function shuffleAndDeal(playerAiList, seed) {
     cardList: [],
     cardTable: {},
     players: players,
-    discardCount: 0,
     stateStack: [],
+    discardCount: 0,
+    gainCardOnTopOfDeck: false,
+    gainCardCostingUpTo: 0,
   };
 
   var listOfCardsPerSet = {};
@@ -578,6 +623,8 @@ function stateIndexToString(stateIndex) {
       return "buy a card";
     case STATE_DISCARD_THEN_DRAW:
       return "discard cards before drawing";
+    case STATE_GAIN_CARD:
+      return "gain a card";
     default:
       throw new Error("missing stateIndexToString for " + stateIndex);
   }
@@ -675,6 +722,52 @@ function popState(state, newStateIndex) {
 function doDiscardThenDraw(state, player, card, params) {
   if (state.discardCount !== 0) throw new Error("unexpected discardCount value");
   pushState(state, STATE_DISCARD_THEN_DRAW);
+}
+
+function doGainCardEffect(state, player, card, params) {
+  var matchingCards = getMatchingCards(state, {
+    costingUpTo: params.costingUpTo,
+    name: params.name,
+    countGreaterEqual: 1,
+  });
+  if (matchingCards.length === 0) {
+    // no card to gain, we're done.
+    return;
+  }
+  if (matchingCards.length === 1) {
+    // no need to prompt for action.
+    playerGainCard(state, player, matchingCards[0], !!params.gainCardOnTopOfDeck);
+    return;
+  }
+  state.gainCardOnTopOfDeck = !!params.onTopOfDeck;
+  state.gainCardCostingUpTo = params.costingUpTo;
+  state.gainCardName = params.name;
+  pushState(state, STATE_GAIN_CARD);
+}
+
+function getMatchingCards(state, query) {
+  var results = [];
+  for (var i = 0; i < state.cardList.length; i += 1) {
+    var gameCard = state.cardList[i];
+    var match = true;
+    if (query.countGreaterEqual != null && gameCard.count < query.countGreaterEqual) {
+      match = false;
+    }
+    if (query.name != null && gameCard.card.name !== query.name) {
+      match = false;
+    }
+    if (query.costingUpTo != null && gameCard.card.cost > query.costingUpTo) {
+      match = false;
+    }
+    if (match) {
+      results.push(gameCard);
+    }
+  }
+  return results;
+}
+
+function doAttackPutCardsOnDeck(state, player, card, params) {
+  throw new Error("TODO");
 }
 
 function doPlusAction(state, player, card, params) {

@@ -63,9 +63,9 @@ Round 1, turn 1
 ## TODO
 
  * Base Set
+   - ~Moat (reaction)
    - Chapel
    - Chancellor
-   - Workshop
    - ~Bureaucrat
    - Feast
    - Gardens
