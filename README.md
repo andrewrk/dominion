@@ -64,9 +64,7 @@ Round 1, turn 1
 
  * Base Set
    - ~Moat (reaction)
-   - Chapel
    - Chancellor
-   - ~Bureaucrat
    - Gardens
    - ~Militia
    - Moneylender

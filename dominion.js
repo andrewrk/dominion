@@ -7,6 +7,7 @@ var STATE_BUY = nextState++;
 var STATE_DISCARD_THEN_DRAW = nextState++;
 var STATE_GAIN_CARD = nextState++;
 var STATE_PUT_CARDS_ON_DECK = nextState++;
+var STATE_TRASH = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
@@ -15,6 +16,8 @@ var moveTable = {
   'doneDiscarding': doDoneDiscardingMove,
   'gain': doGainCardMove,
   'putOnDeck': doPutCardOnDeckMove,
+  'trash': doTrashMove,
+  'doneTrashing': doDoneTrashingMove,
 };
 var effectTable = {
   'plusAction': doPlusAction,
@@ -26,6 +29,7 @@ var effectTable = {
   'attackPutCardsOnDeck': doAttackPutCardsOnDeck,
   'trashThisCard': doTrashThisCardEffect,
   'revealHand': doRevealHandEffect,
+  'trashUpTo': doTrashUpToEffect,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -78,6 +82,10 @@ function moveToString(move) {
       return "Gain " + move.params.card;
     case 'putOnDeck':
       return "Put on deck " + move.params.card;
+    case 'trash':
+      return "Trash " + move.params.card;
+    case 'doneTrashing':
+      return "Done trashing";
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
@@ -156,10 +164,29 @@ function enumerateMoves(state) {
     case STATE_PUT_CARDS_ON_DECK:
       addPutCardsOnDeckMoves();
       break;
+    case STATE_TRASH:
+      addTrashMoves();
+      break;
     default:
       throw new Error("invalid state");
   }
   return moves;
+
+  function addTrashMoves() {
+    var seenActions = {};
+    moves.push({ name: 'doneTrashing' });
+    for (var i = 0; i < player.hand.length; i += 1) {
+      var card = player.hand[i];
+      if (seenActions[card.name]) continue;
+      seenActions[card.name] = true;
+      moves.push({
+        name: 'trash',
+        params: {
+          card: card.name,
+        }
+      });
+    }
+  }
 
   function addPutCardsOnDeckMoves() {
     var matchingCardNames = getMatchingCardsInHand(state, player, {
@@ -383,7 +410,6 @@ function doDiscardMove(state, params) {
 function doDoneDiscardingMove(state, params) {
   var player = getCurrentPlayer(state);
   playerDraw(state, player, state.discardCount);
-  state.discardCount = 0;
   popState(state);
 }
 
@@ -413,6 +439,15 @@ function doPutCardOnDeckMove(state, params) {
     default:
       throw new Error("unexpected state: " + stateIndexToString(state.state));
   }
+}
+
+function doTrashMove(state, params) {
+  var player = getCurrentPlayer(state);
+  state.trash.push(removeCardFromHand(player, params.card));
+}
+
+function doDoneTrashingMove(state, params) {
+  popState(state);
 }
 
 function playerDiscardCardName(state, player, cardName) {
@@ -557,6 +592,7 @@ function shuffleAndDeal(playerAiList, seed) {
     putCardsOnDeckCount: -1,
     putCardsOnDeckElse: null,
     waitingOnPlayerIndex: -1,
+    trashActionsLeft: 0,
   };
 
   var listOfCardsPerSet = {};
@@ -713,7 +749,9 @@ function stateIndexToString(stateIndex) {
     case STATE_GAIN_CARD:
       return "gain a card";
     case STATE_PUT_CARDS_ON_DECK:
-      return "put cards on deck";
+      return "put on deck a card";
+    case STATE_TRASH:
+      return "trash a card";
     default:
       throw new Error("missing stateIndexToString for " + stateIndex);
   }
@@ -822,6 +860,7 @@ function pushState(state, newStateIndex) {
     putCardsOnDeckCount: state.putCardsOnDeckCount,
     putCardsOnDeckElse: state.putCardsOnDeckElse,
     waitingOnPlayerIndex: state.waitingOnPlayerIndex,
+    trashActionsLeft: state.trashActionsLeft,
   });
   state.state = newStateIndex;
 }
@@ -837,6 +876,7 @@ function popState(state, newStateIndex) {
   state.putCardsOnDeckCount = o.putCardsOnDeckCount;
   state.putCardsOnDeckElse = o.putCardsOnDeckElse;
   state.waitingOnPlayerIndex = o.waitingOnPlayerIndex;
+  state.trashActionsLeft = o.trashActionsLeft;
   var player = getCurrentPlayer(state);
   checkActionsOver(state, player);
 }
@@ -924,6 +964,11 @@ function doTrashThisCardEffect(state, player, card, params) {
 
 function doRevealHandEffect(state, player, card, params) {
   console.log(playerName(player) + " reveals hand");
+}
+
+function doTrashUpToEffect(state, player, card, params) {
+  pushState(state, STATE_TRASH);
+  state.trashActionsLeft = params.amount;
 }
 
 function doPlusAction(state, player, card, params) {
