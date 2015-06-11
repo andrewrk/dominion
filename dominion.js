@@ -55,12 +55,15 @@ function mainLoop(state) {
   if (moveList.length === 0) {
     throw new Error("no move possible");
   }
+  var onMoveChosenCalled = false;
   if (moveList.length === 1) {
     onMoveChosen(null, moveList[0]);
   } else {
     player.ai.chooseMove(dominion, state, moveList, onMoveChosen);
   }
   function onMoveChosen(err, move) {
+    if (onMoveChosenCalled) throw new Error("callback called twice");
+    onMoveChosenCalled = true;
     if (err) throw err;
     if (!move) throw new Error("invalid move");
     console.log(playerName(player) + " chooses: " + moveToString(move));
@@ -851,6 +854,7 @@ function importAndProcessCards() {
     cardList: [],
     isCardType: isCardType,
     moveToString: moveToString,
+    getCard: getCard,
   };
   var cardsJson = require('./lib/cards');
 
