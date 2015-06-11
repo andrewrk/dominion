@@ -398,7 +398,7 @@
         {
           "name": "attackDiscardDownTo",
           "params": {
-            "cardCount": 3
+            "amount": 3
           }
         }
       ]

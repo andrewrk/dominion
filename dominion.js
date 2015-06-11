@@ -10,6 +10,7 @@ var STATE_PUT_CARDS_ON_DECK = nextState++;
 var STATE_TRASH = nextState++;
 var STATE_REACTION = nextState++;
 var STATE_DISCARD_DECK = nextState++;
+var STATE_DISCARD_DOWN_TO = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
@@ -39,6 +40,7 @@ var effectTable = {
   'revealThisCard': doRevealThisCardEffect,
   'unaffectedByAttack': doUnaffectedByAttackEffect,
   'discardDeck': doDiscardDeckEffect,
+  'attackDiscardDownTo': doAttackDiscardDownTo,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -176,6 +178,7 @@ function enumerateMoves(state) {
       addEndTurn();
       break;
     case STATE_DISCARD_THEN_DRAW:
+      moves.push({ name: 'doneDiscarding' });
       addDiscardMoves();
       break;
     case STATE_GAIN_CARD:
@@ -192,6 +195,9 @@ function enumerateMoves(state) {
       break;
     case STATE_DISCARD_DECK:
       addDiscardDeckMoves();
+      break;
+    case STATE_DISCARD_DOWN_TO:
+      addDiscardMoves();
       break;
     default:
       throw new Error("invalid state");
@@ -274,7 +280,6 @@ function enumerateMoves(state) {
 
   function addDiscardMoves() {
     var seenActions = {};
-    moves.push({ name: 'doneDiscarding' });
     for (var i = 0; i < player.hand.length; i += 1) {
       var card = player.hand[i];
       if (seenActions[card.name]) continue;
@@ -454,8 +459,14 @@ function doDiscardMove(state, params) {
       state.discardCount += 1;
       playerDiscardCardName(state, player, params.card);
       break;
+    case STATE_DISCARD_DOWN_TO:
+      playerDiscardCardName(state, player, params.card);
+      if (player.hand.length <= state.discardDownTo) {
+        popState(state);
+      }
+      break;
     default:
-      throw new Error("unexpected state: " + stateIndexToString(state.state));
+      throw new Error("unexpected state: " + stateIndexToString(state));
   }
 }
 
@@ -474,7 +485,7 @@ function doGainCardMove(state, params) {
       popState(state);
       break;
     default:
-      throw new Error("unexpected state: " + stateIndexToString(state.state));
+      throw new Error("unexpected state: " + stateIndexToString(state));
   }
 }
 
@@ -489,7 +500,7 @@ function doPutCardOnDeckMove(state, params) {
       handleNextPutCardsOnDeck(state);
       break;
     default:
-      throw new Error("unexpected state: " + stateIndexToString(state.state));
+      throw new Error("unexpected state: " + stateIndexToString(state));
   }
 }
 
@@ -768,7 +779,7 @@ function printGameState(state) {
     console.log("          hand: " + deckToString(player.hand, true));
     console.log("  discard pile: " + deckToString(player.discardPile, true));
   }
-  console.log("Waiting for " + playerName(getCurrentPlayer(state)) + " to " + stateIndexToString(state.state));
+  console.log("Waiting for " + playerName(getCurrentPlayer(state)) + " to " + stateIndexToString(state));
   console.log("Actions: " + state.actionCount +
            "   Buys: " + state.buyCount +
            "   Treasure: " + state.treasureCount);
@@ -822,8 +833,8 @@ function iterateAllPlayerCards(player, onCard) {
   player.inPlay.forEach(onCard);
 }
 
-function stateIndexToString(stateIndex) {
-  switch (stateIndex) {
+function stateIndexToString(state) {
+  switch (state.state) {
     case STATE_ACTION:
       return "play an action, treasure, or buy a card";
     case STATE_TREASURE:
@@ -842,8 +853,10 @@ function stateIndexToString(stateIndex) {
       return "play a reaction";
     case STATE_DISCARD_DECK:
       return "choose whether to discard deck";
+    case STATE_DISCARD_DOWN_TO:
+      return "discard down to " + state.discardDownTo + " cards";
     default:
-      throw new Error("missing stateIndexToString for " + stateIndex);
+      throw new Error("missing stateIndexToString for " + state.state);
   }
 }
 
@@ -954,7 +967,7 @@ function pushState(state, newStateIndex) {
     trashActionsLeft: state.trashActionsLeft,
     isAttack: state.isAttack,
     unaffectedByAttack: state.unaffectedByAttack,
-    playableReactionCards: state.playableReactionCards,
+    playableReactionCards: state.playableReactionCards.concat([]),
   });
   state.state = newStateIndex;
 }
@@ -1052,6 +1065,15 @@ function doAttackPutCardsOnDeck(state, player, card, cardLocationList, params) {
     state.putCardsOnDeckType = params.type;
     state.putCardsOnDeckCount = params.count;
     state.putCardsOnDeckElse = params['else'];
+    attackPlayer(state, state.players[state.waitingOnPlayerIndex]);
+  }
+}
+
+function doAttackDiscardDownTo(state, player, card, cardLocationList, params) {
+  for (var i = 0; i < state.players.length - 1; i += 1) {
+    pushState(state, STATE_DISCARD_DOWN_TO);
+    state.waitingOnPlayerIndex = euclideanMod(state.currentPlayerIndex - i - 1, state.players.length);
+    state.discardDownTo = params.amount;
     attackPlayer(state, state.players[state.waitingOnPlayerIndex]);
   }
 }
