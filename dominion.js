@@ -4,10 +4,20 @@ var nextState = 0;
 var STATE_ACTION = nextState++;
 var STATE_TREASURE = nextState++;
 var STATE_BUY = nextState++;
+var STATE_DISCARD_THEN_DRAW = nextState++;
 var moveTable = {
-  'playCard': doPlayCardMove,
+  'play': doPlayCardMove,
   'buy': doBuyMove,
   'endTurn': doEndTurn,
+  'discard': doDiscardMove,
+  'doneDiscarding': doDoneDiscardingMove,
+};
+var effectTable = {
+  'plusAction': doPlusAction,
+  'plusBuy': doPlusBuy,
+  'plusTreasure': doPlusTreasure,
+  'plusCard': doPlusCard,
+  'discardThenDraw': doDiscardThenDraw,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -28,7 +38,11 @@ function mainLoop(state) {
   if (moveList.length === 0) {
     throw new Error("no move possible");
   }
-  player.ai.chooseMove(dominion, state, moveList, onMoveChosen);
+  if (moveList.length === 1) {
+    onMoveChosen(null, moveList[0]);
+  } else {
+    player.ai.chooseMove(dominion, state, moveList, onMoveChosen);
+  }
   function onMoveChosen(err, move) {
     if (err) throw err;
     if (!move) throw new Error("invalid move");
@@ -42,12 +56,16 @@ function mainLoop(state) {
 
 function moveToString(move) {
   switch (move.name) {
-    case 'playCard':
+    case 'play':
       return "Play " + move.params.card;
     case 'buy':
       return "Buy " + move.params.card;
     case 'endTurn':
       return "End turn";
+    case 'discard':
+      return "Discard " + move.params.card;
+    case 'doneDiscarding':
+      return "Done discarding";
     default:
       throw new Error("moveToString case missing: " + move.name);
   }
@@ -117,6 +135,9 @@ function enumerateMoves(state) {
       enumerateBuyMoves();
       addEndTurn();
       break;
+    case STATE_DISCARD_THEN_DRAW:
+      addDiscardMoves();
+      break;
     default:
       throw new Error("invalid state");
   }
@@ -124,6 +145,22 @@ function enumerateMoves(state) {
 
   function addEndTurn() {
     moves.push({ name: 'endTurn' });
+  }
+
+  function addDiscardMoves() {
+    var seenActions = {};
+    moves.push({ name: 'doneDiscarding' });
+    for (var i = 0; i < player.hand.length; i += 1) {
+      var card = player.hand[i];
+      if (seenActions[card.name]) continue;
+      seenActions[card.name] = true;
+      moves.push({
+        name: 'discard',
+        params: {
+          card: card.name,
+        }
+      });
+    }
   }
 
   function enumerateActionMoves(includeNonTreasure) {
@@ -134,7 +171,7 @@ function enumerateMoves(state) {
         if (seenActions[card.name]) continue;
         seenActions[card.name] = true;
         moves.push({
-          name: 'playCard',
+          name: 'play',
           params: {
             card: card.name,
           },
@@ -171,12 +208,40 @@ function doPlayCardMove(state, params) {
   if (isCardType(card, 'Action')) {
     state.actionCount -= 1;
   }
-  if (state.actionCount < 0) throw new Error("invalid action count");
-  if (state.actionCount === 0) {
-    state.state = STATE_BUY;
+  player.inPlay.push(removeCardFromHand(player, card.name));
+  if (card.effects) {
+    for (var i = 0; i < card.effects.length; i += 1) {
+      var effect = card.effects[i];
+      var fn = effectTable[effect.name];
+      if (!fn) throw new Error("unrecognized effect: " + effect.name);
+      fn(state, player, card, effect.params);
+    }
   }
 
-  player.inPlay.push(removeCardFromHand(player, card.name));
+  checkActionsOver(state, player);
+}
+
+function checkActionsOver(state, player) {
+  if (state.state === STATE_ACTION) {
+    if (state.actionCount < 0) throw new Error("invalid action count");
+    if (state.actionCount === 0) {
+      state.state = STATE_TREASURE;
+    }
+  }
+  if (state.state === STATE_TREASURE && playerHandTreasureCardCount(state, player) === 0) {
+    state.state = STATE_BUY;
+  }
+}
+
+function playerHandTreasureCardCount(state, player) {
+  var count = 0;
+  for (var i = 0; i < player.hand.length; i += 1) {
+    var card = player.hand[i];
+    if (isCardType(card, 'Treasure')) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 function removeCardFromHand(player, cardName) {
@@ -215,6 +280,29 @@ function doBuyMove(state, params) {
 function doEndTurn(state, params) {
   var player = getCurrentPlayer(state);
   endTurn(state, player);
+}
+
+function doDiscardMove(state, params) {
+  var player = getCurrentPlayer(state);
+  switch (state.state) {
+    case STATE_DISCARD_THEN_DRAW:
+      state.discardCount += 1;
+      playerDiscardCardName(state, player, params.card);
+      break;
+    default:
+      throw new Error("unexpected state: " + stateIndexToString(state.state));
+  }
+}
+
+function doDoneDiscardingMove(state, params) {
+  var player = getCurrentPlayer(state);
+  playerDraw(state, player, state.discardCount);
+  state.discardCount = 0;
+  popState(state);
+}
+
+function playerDiscardCardName(state, player, cardName) {
+  player.discardPile.push(removeCardFromHand(player, cardName));
 }
 
 function checkEndOfGame(state) {
@@ -268,9 +356,10 @@ function checkEndOfGame(state) {
 }
 
 function endTurn(state, player) {
-  playerDiscardHand(state, player);
+  playerCleanUpHand(state, player);
   playerDraw(state, player, 5);
 
+  // calls process.exit if game over
   checkEndOfGame(state);
 
   state.state = STATE_ACTION;
@@ -282,7 +371,7 @@ function endTurn(state, player) {
   if (state.currentPlayerIndex === 0) state.roundIndex += 1;
 }
 
-function playerDiscardHand(state, player) {
+function playerCleanUpHand(state, player) {
   while (player.inPlay.length > 0) {
     player.discardPile.push(player.inPlay.pop());
   }
@@ -292,6 +381,7 @@ function playerDiscardHand(state, player) {
 }
 
 function playerDraw(state, player, count) {
+  console.log(playerName(player) + " draws " + count + " cards");
   for (var i = 0; i < count; i += 1) {
     if (player.deck.length === 0) {
       if (player.discardPile.length === 0) return;
@@ -334,6 +424,8 @@ function shuffleAndDeal(playerAiList, seed) {
     cardList: [],
     cardTable: {},
     players: players,
+    discardCount: 0,
+    stateStack: [],
   };
 
   var listOfCardsPerSet = {};
@@ -410,6 +502,7 @@ function shuffleAndDeal(playerAiList, seed) {
 }
 
 function printGameState(state) {
+  console.log("");
   console.log("Round " + (state.roundIndex + 1) + ", turn " + (state.turnIndex + 1));
   var i;
   for (i = 0; i < state.cardList.length; i += 1) {
@@ -482,6 +575,8 @@ function stateIndexToString(stateIndex) {
       return "play a treasure or buy a card";
     case STATE_BUY:
       return "buy a card";
+    case STATE_DISCARD_THEN_DRAW:
+      return "discard cards before drawing";
     default:
       throw new Error("missing stateIndexToString for " + stateIndex);
   }
@@ -562,4 +657,41 @@ function getCard(name) {
 
 function isCardType(card, typeName) {
   return !!card.type[typeName];
+}
+
+function pushState(state, newStateIndex) {
+  state.stateStack.push(state.state);
+  state.state = newStateIndex;
+}
+
+function popState(state, newStateIndex) {
+  if (state.stateStack.length <= 0) throw new Error("state stack empty");
+  state.state = state.stateStack.pop();
+  var player = getCurrentPlayer(state);
+  checkActionsOver(state, player);
+}
+
+function doDiscardThenDraw(state, player, card, params) {
+  if (state.discardCount !== 0) throw new Error("unexpected discardCount value");
+  pushState(state, STATE_DISCARD_THEN_DRAW);
+}
+
+function doPlusAction(state, player, card, params) {
+  if (!params.amount) throw new Error("missing amount parameter");
+  state.actionCount += params.amount;
+}
+
+function doPlusTreasure(state, player, card, params) {
+  if (!params.amount) throw new Error("missing amount parameter");
+  state.treasureCount += params.amount;
+}
+
+function doPlusBuy(state, player, card, params) {
+  if (!params.amount) throw new Error("missing amount parameter");
+  state.buyCount += params.amount;
+}
+
+function doPlusCard(state, player, card, params) {
+  if (!params.amount) throw new Error("missing amount parameter");
+  playerDraw(state, player, params.amount);
 }
