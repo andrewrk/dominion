@@ -63,7 +63,6 @@ Round 1, turn 1
 ## TODO
 
  * Base Set
-   - Gardens
    - Moneylender
    - ~Remodel
    - Spy

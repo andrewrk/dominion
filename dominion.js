@@ -807,8 +807,16 @@ function playerCardCount(state, player) {
   return player.hand.length + player.inPlay.length + player.deck.length + player.discardPile.length;
 }
 
+function iterateAllPlayerCards(player, onCard) {
+  player.deck.forEach(onCard);
+  player.discardPile.forEach(onCard);
+  player.hand.forEach(onCard);
+  player.inPlay.forEach(onCard);
+}
+
 function calcVictoryPoints(state, player) {
   var vp = 0;
+  var cardCount = playerCardCount(state, player);
   iterateAllPlayerCards(player, onCard);
   return vp;
   function onCard(card) {
@@ -816,21 +824,14 @@ function calcVictoryPoints(state, player) {
     for (var i = 0; i < card.victory.length; i += 1) {
       var victoryObj = card.victory[i];
       if (victoryObj.type === 'constant') {
-        var value = parseInt(victoryObj.params.value, 10);
-        if (isNaN(value)) throw new Error("invalid victory point value");
-        vp += value;
+        vp += victoryObj.params.value;
+      } else if (victoryObj.type === 'perCardInDeck') {
+        vp += victoryObj.params.multiplier * Math.floor(cardCount / victoryObj.params.divisor);
       } else {
         throw new Error("invalid victory type: " + victoryObj.type);
       }
     }
   }
-}
-
-function iterateAllPlayerCards(player, onCard) {
-  player.deck.forEach(onCard);
-  player.discardPile.forEach(onCard);
-  player.hand.forEach(onCard);
-  player.inPlay.forEach(onCard);
 }
 
 function stateIndexToString(state) {
