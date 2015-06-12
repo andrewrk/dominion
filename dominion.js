@@ -44,7 +44,7 @@ var effectTable = {
   'attackGainCard': doAttackGainCard,
 };
 var ais = {
-  'rando': require('./lib/ai/rando'),
+  'naive': require('./lib/ai/naive'),
   'bigmoney': require('./lib/ai/bigmoney'),
   'cli': require('./lib/ai/cli'),
 };

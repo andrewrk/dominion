@@ -59,6 +59,8 @@ Round 1, turn 1
 
  * You can choose CLI to play a command line interface game against an AI.
  * [Big Money strategy](http://wiki.dominionstrategy.com/index.php/Big_Money) is implemented.
+ * Naive strategy - play +Actions first, then action cards, then buy the most
+   expensive card, choosing randomly when there is a tie. Never buy Curses.
 
 ## TODO
 
