@@ -71,7 +71,6 @@ Round 1, turn 1
    - Council Room
    - Library
    - Mine
-   - ~Witch
    - Adventurer
  * Add log and initial state so that we can completely reproduce a game
  * Web server so players can play each other or AIs.

@@ -41,6 +41,7 @@ var effectTable = {
   'unaffectedByAttack': doUnaffectedByAttackEffect,
   'discardDeck': doDiscardDeckEffect,
   'attackDiscardDownTo': doAttackDiscardDownTo,
+  'attackGainCard': doAttackGainCard,
 };
 var ais = {
   'rando': require('./lib/ai/rando'),
@@ -381,6 +382,17 @@ function checkActionsOver(state, player) {
   if (state.isAttack && state.unaffectedByAttack) {
     popState(state);
     return;
+  }
+  if (state.state === STATE_GAIN_CARD) {
+    var matchingCards = getMatchingCards(state, {
+      costingUpTo: state.gainCardCostingUpTo,
+      name: state.gainCardName,
+      countGreaterEqual: 1,
+    });
+    if (matchingCards.length === 0) {
+      popState(state);
+      return;
+    }
   }
   if (state.state === STATE_PUT_CARDS_ON_DECK) {
     handleNextPutCardsOnDeck(state);
@@ -1075,6 +1087,18 @@ function doAttackDiscardDownTo(state, player, card, cardLocationList, params) {
     pushState(state, STATE_DISCARD_DOWN_TO);
     state.waitingOnPlayerIndex = euclideanMod(state.currentPlayerIndex - i - 1, state.players.length);
     state.discardDownTo = params.amount;
+    attackPlayer(state, state.players[state.waitingOnPlayerIndex]);
+  }
+}
+
+function doAttackGainCard(state, player, card, cardLocationList, params) {
+  for (var i = 0; i < state.players.length - 1; i += 1) {
+    pushState(state, STATE_GAIN_CARD);
+    state.waitingOnPlayerIndex = euclideanMod(state.currentPlayerIndex - i - 1, state.players.length);
+
+    state.gainCardOnTopOfDeck = !!params.onTopOfDeck;
+    state.gainCardCostingUpTo = params.costingUpTo;
+    state.gainCardName = params.name;
     attackPlayer(state, state.players[state.waitingOnPlayerIndex]);
   }
 }

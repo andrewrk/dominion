@@ -661,7 +661,21 @@
       "type": {
         "Action": true,
         "Attack": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "attackGainCard",
+          "params": {
+            "name": "Curse"
+          }
+        }
+      ]
     },
     "Adventurer": {
       "supply": {
