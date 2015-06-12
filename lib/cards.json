@@ -522,7 +522,27 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 4
+          }
+        },
+        {
+          "name": "plusBuy",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "otherPlayersDraw",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
     },
     "Festival": {
       "supply": {

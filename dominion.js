@@ -42,6 +42,7 @@ var effectTable = {
   'discardDeck': doDiscardDeckEffect,
   'attackDiscardDownTo': doAttackDiscardDownTo,
   'attackGainCard': doAttackGainCard,
+  'otherPlayersDraw': doOtherPlayersDrawEffect,
 };
 var ais = {
   'naive': require('./lib/ai/naive'),
@@ -1148,6 +1149,15 @@ function doUnaffectedByAttackEffect(state, player, card, cardLocationList, param
 
 function doDiscardDeckEffect(state, player, card, cardLocationList, params) {
   pushState(state, STATE_DISCARD_DECK);
+}
+
+function doOtherPlayersDrawEffect(state, player, card, cardLocationList, params) {
+  if (!params.amount) throw new Error("missing amount parameter");
+  for (var i = 1; i < state.players.length; i += 1) {
+    var otherPlayerIndex = euclideanMod(player.index + i, state.players.length);
+    var otherPlayer = state.players[otherPlayerIndex];
+    playerDraw(state, otherPlayer, params.amount);
+  }
 }
 
 function doPlusAction(state, player, card, cardLocationList, params) {

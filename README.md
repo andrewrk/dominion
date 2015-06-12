@@ -70,7 +70,6 @@ Round 1, turn 1
    - Spy
    - ~Thief
    - ~Throne Room
-   - Council Room
    - Library
    - Mine
    - Adventurer
