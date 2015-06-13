@@ -801,7 +801,7 @@ function shuffleAndDeal(playerAiList, seed) {
     discardCount: 0,
     gainCardOnTopOfDeck: false,
     gainCardCostingUpTo: 0,
-    gainCardCostingUpToMoreThanTrashed: 0,
+    gainCardCostingUpToMoreThanTrashed: null,
     gainCardIntoHand: false,
     gainCardType: null,
     gainCardName: null,
