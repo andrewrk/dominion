@@ -157,9 +157,10 @@
       },
       "effects": [
         {
-          "name": "trashUpTo",
+          "name": "trashCards",
           "params": {
-            "amount": 4
+            "amount": 4,
+            "mandatory": false
           }
         }
       ]
@@ -414,27 +415,7 @@
       "cost": 4,
       "type": {
         "Action": true
-      },
-      "effects": [
-        {
-          "name": "ifYouDo",
-          "params": {
-            "conditionalAction": {
-              "name": "trashCards",
-              "params": {
-                "count": 1,
-                "name": "Copper"
-              }
-            },
-            "ifYouDoAction": {
-              "name": "plusTreasure",
-              "params": {
-                "amount": 3
-              }
-            }
-          }
-        }
-      ]
+      }
     },
     "Remodel": {
       "supply": {
@@ -667,7 +648,25 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "trashCards",
+          "params": {
+            "amount": 1,
+            "mandatory": true,
+            "type": "Treasure"
+          }
+        },
+        {
+          "name": "gainCard",
+          "params": {
+            "costingUpToMoreThanTrashed": 3,
+            "intoHand": true,
+            "type": "Treasure"
+          }
+        }
+      ]
     },
     "Witch": {
       "supply": {

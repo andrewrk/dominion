@@ -11,6 +11,15 @@ var STATE_TRASH = nextState++;
 var STATE_REACTION = nextState++;
 var STATE_DISCARD_DECK = nextState++;
 var STATE_DISCARD_DOWN_TO = nextState++;
+var STATE_PLUS_ACTION = nextState++;
+var STATE_PLUS_TREASURE = nextState++;
+var STATE_PLUS_BUY = nextState++;
+var STATE_PLUS_CARD = nextState++;
+var STATE_TRASH_THIS_CARD = nextState++;
+var STATE_REVEAL_HAND = nextState++;
+var STATE_REVEAL_THIS_CARD = nextState++;
+var STATE_UNAFFECTED_BY_ATTACK = nextState++;
+var STATE_OTHER_PLAYERS_DRAW = nextState++;
 var moveTable = {
   'play': doPlayCardMove,
   'buy': doBuyMove,
@@ -36,7 +45,7 @@ var effectTable = {
   'attackPutCardsOnDeck': doAttackPutCardsOnDeck,
   'trashThisCard': doTrashThisCardEffect,
   'revealHand': doRevealHandEffect,
-  'trashUpTo': doTrashUpToEffect,
+  'trashCards': doTrashCardsEffect,
   'revealThisCard': doRevealThisCardEffect,
   'unaffectedByAttack': doUnaffectedByAttackEffect,
   'discardDeck': doDiscardDeckEffect,
@@ -229,16 +238,18 @@ function enumerateMoves(state) {
   }
 
   function addTrashMoves() {
-    var seenActions = {};
-    moves.push({ name: 'doneTrashing' });
-    for (var i = 0; i < player.hand.length; i += 1) {
-      var card = player.hand[i];
-      if (seenActions[card.name]) continue;
-      seenActions[card.name] = true;
+    if (!state.trashMandatory) {
+      moves.push({ name: 'doneTrashing' });
+    }
+    var matchingCardNames = getMatchingCardsInHand(state, player, {
+      type: state.trashType,
+      name: state.trashName,
+    });
+    for (var i = 0; i < matchingCardNames.length; i += 1) {
       moves.push({
         name: 'trash',
         params: {
-          card: card.name,
+          card: matchingCardNames[i],
         }
       });
     }
@@ -260,9 +271,15 @@ function enumerateMoves(state) {
   }
 
   function addGainCardMoves() {
+    var costingUpTo = state.gainCardCostingUpTo;
+    if (state.gainCardCostingUpToMoreThanTrashed != null) {
+      if (state.costOfRecentlyTrashedCard === -1) throw new Error("invalid costOfRecentlyTrashedCard");
+      costingUpTo = state.costOfRecentlyTrashedCard + state.gainCardCostingUpToMoreThanTrashed;
+    }
     var matchingCards = getMatchingCards(state, {
-      costingUpTo: state.gainCardCostingUpTo,
+      costingUpTo: costingUpTo,
       name: state.gainCardName,
+      type: state.gainCardType,
       countGreaterEqual: 1,
     });
     for (var i = 0; i < matchingCards.length; i += 1) {
@@ -328,8 +345,16 @@ function enumerateMoves(state) {
 }
 
 function doPlayCardMove(state, params) {
+  if (state.state !== STATE_ACTION && state.state !== STATE_TREASURE) {
+    throw new Error("invalid state for playing a card");
+  }
+
   var card = dominion.cardTable[params.card];
   var player = getCurrentPlayer(state);
+
+  if (state.actionCount < 1 && isCardType(card, 'Action')) {
+    throw new Error("not enough actions to play a card");
+  }
 
   if (card.treasure) {
     state.treasureCount += card.treasure;
@@ -341,13 +366,17 @@ function doPlayCardMove(state, params) {
     state.actionCount -= 1;
   }
   player.inPlay.push(removeCardFromHand(player, card.name));
-  if (card.effects) {
-    for (var i = 0; i < card.effects.length; i += 1) {
+  doEffects(state, player, card, player.inPlay, card.effects);
+}
+
+function doEffects(state, player, card, cardLocationList, effectsList) {
+  if (effectsList) {
+    // since we're using a stack based solution we need to do the effects in reverse order
+    for (var i = card.effects.length - 1; i >= 0; i -= 1) {
       var effect = card.effects[i];
       doEffect(state, player, card, player.inPlay, effect);
     }
   }
-
   checkActionsOver(state, player);
 }
 
@@ -380,12 +409,91 @@ function handleNextPutCardsOnDeck(state) {
 }
 
 function checkActionsOver(state, player) {
+  var matchingCards;
   if (state.isAttack && state.unaffectedByAttack) {
     popState(state);
     return;
   }
+
+  if (state.state === STATE_OTHER_PLAYERS_DRAW) {
+    for (var i = 1; i < state.players.length; i += 1) {
+      var otherPlayerIndex = euclideanMod(player.index + i, state.players.length);
+      var otherPlayer = state.players[otherPlayerIndex];
+      playerDraw(state, otherPlayer, state.otherPlayersDrawAmount);
+    }
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_REVEAL_THIS_CARD) {
+    console.log(playerName(player) + " reveals " + state.revealCardName);
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_REVEAL_HAND) {
+    console.log(playerName(player) + " reveals hand");
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_TRASH_THIS_CARD) {
+    state.trash.push(removeCardFromList(state.cardLocationList, state.trashName));
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_PLUS_ACTION) {
+    state.actionCount += state.plusActionCount;
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_PLUS_TREASURE) {
+    state.treasureCount += state.plusTreasureCount;
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_PLUS_BUY) {
+    state.buyCount += state.plusBuyCount;
+    popState(state);
+    return;
+  }
+  if (state.state === STATE_PLUS_CARD) {
+    playerDraw(state, player, state.plusCardCount);
+    popState(state);
+    return;
+  }
+
   if (state.state === STATE_GAIN_CARD) {
-    var matchingCards = getMatchingCards(state, {
+    matchingCards = getMatchingCards(state, {
+      costingUpTo: state.gainCardCostingUpTo,
+      name: state.gainCardName,
+      type: state.gainCardType,
+      countGreaterEqual: 1,
+    });
+    if (matchingCards.length === 0) {
+      popState(state);
+      return;
+    }
+  }
+  if (state.state === STATE_TRASH) {
+    var doneWithState = false;
+    if (state.trashActionsLeft === 0) {
+      doneWithState = true;
+    } else {
+      matchingCards = getMatchingCardsInHand(state, player, {
+        type: state.trashType,
+        name: state.trashName,
+      });
+      if (matchingCards.length === 0) {
+        doneWithState = true;
+      }
+    }
+    if (doneWithState) {
+      var prevStackFrame = state.stateStack[state.stateStack.length - 1];
+      prevStackFrame.costOfRecentlyTrashedCard = state.costOfRecentlyTrashedCard;
+      popState(state);
+      return;
+    }
+  }
+  if (state.state === STATE_GAIN_CARD) {
+    matchingCards = getMatchingCards(state, {
       costingUpTo: state.gainCardCostingUpTo,
       name: state.gainCardName,
       countGreaterEqual: 1,
@@ -451,7 +559,7 @@ function doBuyMove(state, params) {
   }
   var gameCard = state.cardTable[params.card];
   var player = getCurrentPlayer(state);
-  playerGainCard(state, player, gameCard, false);
+  playerGainCard(state, player, gameCard, false, false);
   state.buyCount -= 1;
   state.treasureCount -= gameCard.card.cost;
   if (state.buyCount < 0) throw new Error("invalid buy count");
@@ -494,7 +602,7 @@ function doGainCardMove(state, params) {
   switch (state.state) {
     case STATE_GAIN_CARD:
       var gameCard = state.cardTable[params.card];
-      playerGainCard(state, player, gameCard, state.gainCardOnTopOfDeck);
+      playerGainCard(state, player, gameCard, state.gainCardOnTopOfDeck, state.gainCardIntoHand);
       popState(state);
       break;
     default:
@@ -519,7 +627,10 @@ function doPutCardOnDeckMove(state, params) {
 
 function doTrashMove(state, params) {
   var player = getCurrentPlayer(state);
-  state.trash.push(removeCardFromHand(player, params.card));
+  var card = removeCardFromHand(player, params.card);
+  state.costOfRecentlyTrashedCard = card.cost;
+  state.trashActionsLeft -= 1;
+  state.trash.push(card);
 }
 
 function doDoneTrashingMove(state, params) {
@@ -529,11 +640,7 @@ function doDoneTrashingMove(state, params) {
 function doReactionMove(state, params) {
   var player = getCurrentPlayer(state);
   var card = removeCardFromList(state.playableReactionCards, params.card);
-  for (var i = 0; i < card.condition.effects.length; i += 1) {
-    var effect = card.condition.effects[i];
-    doEffect(state, player, card, player.hand, effect);
-  }
-  checkActionsOver(state, player);
+  doEffects(state, player, card, player.hand, card.condition.effects);
 }
 
 function doDoneReactingMove(state, params) {
@@ -645,14 +752,17 @@ function playerDraw(state, player, count) {
   }
 }
 
-function playerGainCard(state, player, gameCard, topOfDeck) {
+function playerGainCard(state, player, gameCard, topOfDeck, intoHand) {
   var topOfDeckText = topOfDeck ? " on top of deck" : "";
-  console.log(playerName(player) + " gains a " + gameCard.card.name + topOfDeckText);
+  var intoHandText = intoHand ? " into hand" : "";
+  console.log(playerName(player) + " gains a " + gameCard.card.name + topOfDeckText + intoHandText);
   if (!gameCard) throw new Error("invalid card name");
   gameCard.count -= 1;
   if (gameCard.count < 0) throw new Error("invalid game card count");
   if (topOfDeck) {
     player.deck.push(gameCard.card);
+  } else if (intoHand) {
+    player.hand.push(gameCard.card);
   } else {
     player.discardPile.push(gameCard.card);
   }
@@ -662,6 +772,7 @@ function performMove(state, move) {
   var fn = moveTable[move.name];
   if (!fn) throw new Error("illegal move");
   fn(state, move.params);
+  checkActionsOver(state, getCurrentPlayer(state));
 }
 
 function shuffleAndDeal(playerAiList, seed) {
@@ -690,14 +801,29 @@ function shuffleAndDeal(playerAiList, seed) {
     discardCount: 0,
     gainCardOnTopOfDeck: false,
     gainCardCostingUpTo: 0,
+    gainCardCostingUpToMoreThanTrashed: 0,
+    gainCardIntoHand: false,
+    gainCardType: null,
+    gainCardName: null,
     putCardsOnDeckType: null,
     putCardsOnDeckCount: -1,
     putCardsOnDeckElse: null,
     waitingOnPlayerIndex: -1,
     trashActionsLeft: 0,
+    trashMandatory: false,
+    trashType: null,
+    trashName: null,
+    trashCardLocationList: null,
+    costOfRecentlyTrashedCard: -1,
     isAttack: false,
     unaffectedByAttack: false,
     playableReactionCards: [],
+    plusActionCount: 0,
+    plusTreasureCount: 0,
+    plusBuyCount: 0,
+    plusCardCount: 0,
+    revealCardName: 0,
+    otherPlayersDrawAmount: 0,
   };
 
   var listOfCardsPerSet = {};
@@ -771,6 +897,73 @@ function shuffleAndDeal(playerAiList, seed) {
       inPlay: [],
     };
   }
+}
+
+function pushState(state, newStateIndex) {
+  state.stateStack.push({
+    state: state.state,
+    discardCount: state.discardCount,
+    gainCardOnTopOfDeck: state.gainCardOnTopOfDeck,
+    gainCardIntoHand: state.gainCardIntoHand,
+    gainCardCostingUpTo: state.gainCardCostingUpTo,
+    gainCardCostingUpToMoreThanTrashed: state.gainCardCostingUpToMoreThanTrashed,
+    gainCardType: state.gainCardType,
+    gainCardName: state.gainCardName,
+    putCardsOnDeckType: state.putCardsOnDeckType,
+    putCardsOnDeckCount: state.putCardsOnDeckCount,
+    putCardsOnDeckElse: state.putCardsOnDeckElse,
+    waitingOnPlayerIndex: state.waitingOnPlayerIndex,
+    trashActionsLeft: state.trashActionsLeft,
+    trashMandatory: state.trashMandatory,
+    trashType: state.trashType,
+    trashName: state.trashName,
+    trashCardLocationList: state.trashCardLocationList,
+    costOfRecentlyTrashedCard: state.costOfRecentlyTrashedCard,
+    isAttack: state.isAttack,
+    unaffectedByAttack: state.unaffectedByAttack,
+    playableReactionCards: state.playableReactionCards.concat([]),
+    plusActionCount: state.plusActionCount,
+    plusTreasureCount: state.plusTreasureCount,
+    plusBuyCount: state.plusBuyCount,
+    plusCardCount: state.plusCardCount,
+    revealCardName: state.revealCardName,
+    otherPlayersDrawAmount: state.otherPlayersDrawAmount,
+  });
+  state.state = newStateIndex;
+}
+
+function popState(state) {
+  if (state.stateStack.length <= 0) throw new Error("state stack empty");
+  var o = state.stateStack.pop();
+  state.state = o.state;
+  state.discardCount = o.discardCount;
+  state.gainCardOnTopOfDeck = o.gainCardOnTopOfDeck;
+  state.gainCardIntoHand = o.gainCardIntoHand;
+  state.gainCardCostingUpTo = o.gainCardCostingUpTo;
+  state.gainCardCostingUpToMoreThanTrashed = o.gainCardCostingUpToMoreThanTrashed;
+  state.gainCardName = o.gainCardName;
+  state.gainCardType = o.gainCardType;
+  state.putCardsOnDeckType = o.putCardsOnDeckType;
+  state.putCardsOnDeckCount = o.putCardsOnDeckCount;
+  state.putCardsOnDeckElse = o.putCardsOnDeckElse;
+  state.waitingOnPlayerIndex = o.waitingOnPlayerIndex;
+  state.trashActionsLeft = o.trashActionsLeft;
+  state.trashMandatory = o.trashMandatory;
+  state.trashType = o.trashType;
+  state.trashName = o.trashName;
+  state.trashCardLocationList = o.trashCardLocationList;
+  state.costOfRecentlyTrashedCard = o.costOfRecentlyTrashedCard;
+  state.isAttack = o.isAttack;
+  state.unaffectedByAttack = o.unaffectedByAttack;
+  state.playableReactionCards = o.playableReactionCards;
+  state.plusActionCount = o.plusActionCount;
+  state.plusBuyCount = o.plusBuyCount;
+  state.plusTreasureCount = o.plusTreasureCount;
+  state.plusCardCount = o.plusCardCount;
+  state.revealCardName = o.revealCardName;
+  state.otherPlayersDrawAmount = o.otherPlayersDrawAmount;
+  var player = getCurrentPlayer(state);
+  checkActionsOver(state, player);
 }
 
 function printGameState(state) {
@@ -968,67 +1161,21 @@ function isCardType(card, typeName) {
   return !!card.type[typeName];
 }
 
-function pushState(state, newStateIndex) {
-  state.stateStack.push({
-    state: state.state,
-    discardCount: state.discardCount,
-    gainCardOnTopOfDeck: state.gainCardOnTopOfDeck,
-    gainCardCostingUpTo: state.gainCardCostingUpTo,
-    putCardsOnDeckType: state.putCardsOnDeckType,
-    putCardsOnDeckCount: state.putCardsOnDeckCount,
-    putCardsOnDeckElse: state.putCardsOnDeckElse,
-    waitingOnPlayerIndex: state.waitingOnPlayerIndex,
-    trashActionsLeft: state.trashActionsLeft,
-    isAttack: state.isAttack,
-    unaffectedByAttack: state.unaffectedByAttack,
-    playableReactionCards: state.playableReactionCards.concat([]),
-  });
-  state.state = newStateIndex;
-}
-
-function popState(state, newStateIndex) {
-  if (state.stateStack.length <= 0) throw new Error("state stack empty");
-  var o = state.stateStack.pop();
-  state.state = o.state;
-  state.discardCount = o.discardCount;
-  state.gainCardOnTopOfDeck = o.gainCardOnTopOfDeck;
-  state.gainCardCostingUpTo = o.gainCardCostingUpTo;
-  state.putCardsOnDeckType = o.putCardsOnDeckType;
-  state.putCardsOnDeckCount = o.putCardsOnDeckCount;
-  state.putCardsOnDeckElse = o.putCardsOnDeckElse;
-  state.waitingOnPlayerIndex = o.waitingOnPlayerIndex;
-  state.trashActionsLeft = o.trashActionsLeft;
-  state.isAttack = o.isAttack;
-  state.unaffectedByAttack = o.unaffectedByAttack;
-  state.playableReactionCards = o.playableReactionCards;
-  var player = getCurrentPlayer(state);
-  checkActionsOver(state, player);
-}
-
 function doDiscardThenDraw(state, player, card, cardLocationList, params) {
   if (state.discardCount !== 0) throw new Error("unexpected discardCount value");
   pushState(state, STATE_DISCARD_THEN_DRAW);
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doGainCardEffect(state, player, card, cardLocationList, params) {
-  var matchingCards = getMatchingCards(state, {
-    costingUpTo: params.costingUpTo,
-    name: params.name,
-    countGreaterEqual: 1,
-  });
-  if (matchingCards.length === 0) {
-    // no card to gain, we're done.
-    return;
-  }
-  if (matchingCards.length === 1) {
-    // no need to prompt for action.
-    playerGainCard(state, player, matchingCards[0], !!params.onTopOfDeck);
-    return;
-  }
   pushState(state, STATE_GAIN_CARD);
   state.gainCardOnTopOfDeck = !!params.onTopOfDeck;
+  state.gainCardIntoHand = !!params.intoHand;
   state.gainCardCostingUpTo = params.costingUpTo;
+  state.gainCardCostingUpToMoreThanTrashed = params.costingUpToMoreThanTrashed;
   state.gainCardName = params.name;
+  state.gainCardType = params.type;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function getMatchingCardsInHand(state, player, query) {
@@ -1051,6 +1198,7 @@ function getMatchingCardsInHand(state, player, query) {
   }
   return Object.keys(results);
 }
+
 function getMatchingCards(state, query) {
   var results = [];
   for (var i = 0; i < state.cardList.length; i += 1) {
@@ -1060,6 +1208,9 @@ function getMatchingCards(state, query) {
       match = false;
     }
     if (query.name != null && gameCard.card.name !== query.name) {
+      match = false;
+    }
+    if (query.type != null && !isCardType(gameCard.card, query.type)) {
       match = false;
     }
     if (query.costingUpTo != null && gameCard.card.cost > query.costingUpTo) {
@@ -1126,20 +1277,30 @@ function triggerCondition(state, player, conditionName) {
 }
 
 function doTrashThisCardEffect(state, player, card, cardLocationList, params) {
-  state.trash.push(removeCardFromList(cardLocationList, card.name));
+  pushState(state, STATE_TRASH_THIS_CARD);
+  state.trashCardLocationList = cardLocationList;
+  state.trashName = card.name;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doRevealHandEffect(state, player, card, cardLocationList, params) {
-  console.log(playerName(player) + " reveals hand");
+  pushState(state, STATE_REVEAL_HAND);
+  state.waitingOnPlayerIndex = player.index;
 }
 
-function doTrashUpToEffect(state, player, card, cardLocationList, params) {
+function doTrashCardsEffect(state, player, card, cardLocationList, params) {
   pushState(state, STATE_TRASH);
+  state.trashMandatory = !!params.mandatory
   state.trashActionsLeft = params.amount;
+  state.trashType = params.type;
+  state.trashName = params.name;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doRevealThisCardEffect(state, player, card, cardLocationList, params) {
-  console.log(playerName(player) + " reveals " + card.name);
+  pushState(state, STATE_REVEAL_THIS_CARD);
+  state.revealCardName = card.name;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doUnaffectedByAttackEffect(state, player, card, cardLocationList, params) {
@@ -1149,35 +1310,41 @@ function doUnaffectedByAttackEffect(state, player, card, cardLocationList, param
 
 function doDiscardDeckEffect(state, player, card, cardLocationList, params) {
   pushState(state, STATE_DISCARD_DECK);
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doOtherPlayersDrawEffect(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
-  for (var i = 1; i < state.players.length; i += 1) {
-    var otherPlayerIndex = euclideanMod(player.index + i, state.players.length);
-    var otherPlayer = state.players[otherPlayerIndex];
-    playerDraw(state, otherPlayer, params.amount);
-  }
+  pushState(state, STATE_OTHER_PLAYERS_DRAW);
+  state.otherPlayersDrawAmount = params.amount;
 }
 
 function doPlusAction(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
-  state.actionCount += params.amount;
+  pushState(state, STATE_PLUS_ACTION);
+  state.plusActionCount = params.amount;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doPlusTreasure(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
-  state.treasureCount += params.amount;
+  pushState(state, STATE_PLUS_TREASURE);
+  state.plusTreasureCount = params.amount;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doPlusBuy(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
-  state.buyCount += params.amount;
+  pushState(state, STATE_PLUS_BUY);
+  state.plusBuyCount = params.amount;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function doPlusCard(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
-  playerDraw(state, player, params.amount);
+  pushState(state, STATE_PLUS_CARD);
+  state.plusCardCount = params.amount;
+  state.waitingOnPlayerIndex = player.index;
 }
 
 function euclideanMod(numerator, denominator) {
