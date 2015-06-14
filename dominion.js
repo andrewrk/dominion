@@ -445,7 +445,9 @@ function checkActionsOver(state, player) {
     return;
   }
   if (state.state === STATE_PLUS_TREASURE) {
-    state.treasureCount += state.plusTreasureCount;
+    if (!state.plusTreasureIfYouDidTrash || state.costOfRecentlyTrashedCard >= 0) {
+      state.treasureCount += state.plusTreasureCount;
+    }
     popState(state);
     return;
   }
@@ -461,6 +463,14 @@ function checkActionsOver(state, player) {
   }
 
   if (state.state === STATE_GAIN_CARD) {
+    var costingUpTo = state.gainCardCostingUpTo;
+    if (state.gainCardCostingUpToMoreThanTrashed != null) {
+      if (state.costOfRecentlyTrashedCard === -1) {
+        popState(state);
+        return;
+      }
+      costingUpTo = state.costOfRecentlyTrashedCard + state.gainCardCostingUpToMoreThanTrashed;
+    }
     matchingCards = getMatchingCards(state, {
       costingUpTo: state.gainCardCostingUpTo,
       name: state.gainCardName,
@@ -824,6 +834,7 @@ function shuffleAndDeal(playerAiList, seed) {
     plusCardCount: 0,
     revealCardName: 0,
     otherPlayersDrawAmount: 0,
+    plusTreasureIfYouDidTrash: false,
   };
 
   var listOfCardsPerSet = {};
@@ -928,6 +939,7 @@ function pushState(state, newStateIndex) {
     plusCardCount: state.plusCardCount,
     revealCardName: state.revealCardName,
     otherPlayersDrawAmount: state.otherPlayersDrawAmount,
+    plusTreasureIfYouDidTrash: state.plusTreasureIfYouDidTrash,
   });
   state.state = newStateIndex;
 }
@@ -962,6 +974,7 @@ function popState(state) {
   state.plusCardCount = o.plusCardCount;
   state.revealCardName = o.revealCardName;
   state.otherPlayersDrawAmount = o.otherPlayersDrawAmount;
+  state.plusTreasureIfYouDidTrash = o.plusTreasureIfYouDidTrash;
   var player = getCurrentPlayer(state);
   checkActionsOver(state, player);
 }
@@ -1329,6 +1342,7 @@ function doPlusAction(state, player, card, cardLocationList, params) {
 function doPlusTreasure(state, player, card, cardLocationList, params) {
   if (!params.amount) throw new Error("missing amount parameter");
   pushState(state, STATE_PLUS_TREASURE);
+  state.plusTreasureIfYouDidTrash = !!params.ifYouDidTrash;
   state.plusTreasureCount = params.amount;
   state.waitingOnPlayerIndex = player.index;
 }

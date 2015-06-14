@@ -415,7 +415,24 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "trashCards",
+          "params": {
+            "amount": 1,
+            "mandatory": true,
+            "name": "Copper"
+          }
+        },
+        {
+          "name": "plusTreasure",
+          "params": {
+            "ifYouDidTrash": true,
+            "amount": 3
+          }
+        }
+      ]
     },
     "Remodel": {
       "supply": {

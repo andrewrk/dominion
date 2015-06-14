@@ -61,11 +61,12 @@ Round 1, turn 1
  * [Big Money strategy](http://wiki.dominionstrategy.com/index.php/Big_Money) is implemented.
  * Naive strategy - play +Actions first, then action cards, then buy the most
    expensive card, choosing randomly when there is a tie. Never buy Curses.
+   Tries to do the best thing given the available moves, but does no planning
+   or reacting to opponent.
 
 ## TODO
 
  * Base Set
-   - Moneylender
    - Spy
    - ~Thief
    - ~Throne Room
