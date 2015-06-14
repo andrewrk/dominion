@@ -428,7 +428,22 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "trashCards",
+          "params": {
+            "amount": 1,
+            "mandatory": true
+          }
+        },
+        {
+          "name": "gainCard",
+          "params": {
+            "costingUpToMoreThanTrashed": 2
+          }
+        }
+      ]
     },
     "Smithy": {
       "supply": {

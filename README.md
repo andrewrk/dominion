@@ -66,7 +66,6 @@ Round 1, turn 1
 
  * Base Set
    - Moneylender
-   - ~Remodel
    - Spy
    - ~Thief
    - ~Throne Room
