@@ -5,7 +5,7 @@ Playing around with text-based Dominion card game.
 ## What Does It Do
 
 ```
-$ node dominion.js
+$ node lib/main.js
 Usage: node dominion.js [--player <AI_Name>] [--seed <seed>]
 AIs available: rando bigmoney cli
 Dominion is 2-4 players. Use a correct number of --player arguments.
