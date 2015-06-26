@@ -64,10 +64,10 @@ Round 1, turn 1
    Tries to do the best thing given the available moves, but does no planning
    or reacting to opponent.
 
+
 ## TODO
 
  * Base Set
-   - Spy
    - ~Thief
    - ~Throne Room
    - Library

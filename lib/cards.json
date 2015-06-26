@@ -495,7 +495,24 @@
       "type": {
         "Action": true,
         "Attack": true
-      }
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "attackSpy"
+        }
+      ]
     },
     "Thief": {
       "supply": {
