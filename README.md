@@ -71,6 +71,7 @@ Round 1, turn 1
    - ~Thief
    - ~Throne Room
    - Library
-   - Adventurer
+ * Refactor a bunch of states into `STATE_EFFECT` and have that one call the `doBlahEffect`
+   functions directly. That will save a lot of boilerplate.
  * Add log and initial state so that we can completely reproduce a game
  * Web server so players can play each other or AIs.

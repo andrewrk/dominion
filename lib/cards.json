@@ -322,7 +322,7 @@
           "name": "attackPutCardsOnDeck",
           "params": {
             "type": "Victory",
-            "count": 1,
+            "amount": 1,
             "else": {
               "name": "revealHand"
             }
@@ -756,7 +756,25 @@
       "cost": 6,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "revealUntilCard",
+          "params": {
+            "type": "Treasure",
+            "amount": 2
+          }
+        },
+        {
+          "name": "putRevealedCardsIntoHand",
+          "params": {
+            "type": "Treasure"
+          }
+        },
+        {
+          "name": "discardRevealedCards"
+        }
+      ]
     }
   }
 }
