@@ -526,7 +526,12 @@
       "type": {
         "Action": true,
         "Attack": true
-      }
+      },
+      "effects": [
+        {
+          "name": "attackThief"
+        }
+      ]
     },
     "Throne Room": {
       "supply": {

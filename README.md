@@ -68,8 +68,6 @@ Round 1, turn 1
 ## TODO
 
  * Base Set
-   - ~Thief
-   - ~Throne Room
+   - Throne Room
    - Library
  * Add log and initial state so that we can completely reproduce a game
- * Web server so players can play each other or AIs.
