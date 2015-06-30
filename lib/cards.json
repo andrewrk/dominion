@@ -820,6 +820,42 @@
           }
         }
       ]
+    },
+    "Great Hall": {
+      "supply": {
+        "2": 8,
+        "3": 12,
+        "4": 12
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Intrigue",
+      "cost": 3,
+      "type": {
+        "Action": true,
+        "Victory": true
+      },
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": 1
+          }
+        }
+      ],
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
     }
   }
 }
