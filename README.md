@@ -63,8 +63,3 @@ Round 1, turn 1
    expensive card, choosing randomly when there is a tie. Never buy Curses.
    Tries to do the best thing given the available moves, but does no planning
    or reacting to opponent.
-
-
-## TODO
-
- * Add log and initial state so that we can completely reproduce a game
