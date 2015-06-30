@@ -658,7 +658,12 @@
       "cost": 5,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "libraryDraw"
+        }
+      ]
     },
     "Market": {
       "supply": {
