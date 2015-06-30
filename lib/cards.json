@@ -856,6 +856,47 @@
           }
         }
       ]
+    },
+    "Upgrade": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Intrigue",
+      "cost": 5,
+      "type": {
+        "Action": true
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "trashCards",
+          "params": {
+            "amount": 1,
+            "mandatory": true
+          }
+        },
+        {
+          "name": "gainCard",
+          "params": {
+            "costingUpToMoreThanTrashed": 1,
+            "costExact": true
+          }
+        }
+      ]
     }
   }
 }
