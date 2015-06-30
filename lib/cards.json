@@ -544,7 +544,15 @@
       "cost": 4,
       "type": {
         "Action": true
-      }
+      },
+      "effects": [
+        {
+          "name": "playOtherCard",
+          "params": {
+            "amount": 2
+          }
+        }
+      ]
     },
     "Council Room": {
       "supply": {

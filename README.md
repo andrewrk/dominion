@@ -68,6 +68,5 @@ Round 1, turn 1
 ## TODO
 
  * Base Set
-   - Throne Room
    - Library
  * Add log and initial state so that we can completely reproduce a game
