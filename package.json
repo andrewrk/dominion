@@ -1,6 +1,6 @@
 {
   "name": "dominion-game",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Playing around with text-based Dominion card game.",
   "main": "./lib/dominion.js",
   "author": "Andrew Kelley <superjoe30@gmail.com>",
