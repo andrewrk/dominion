@@ -793,6 +793,33 @@
           "name": "discardRevealedCards"
         }
       ]
+    },
+    "Courtyard": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Intrigue",
+      "cost": 2,
+      "type": {
+        "Action": true
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 3
+          }
+        },
+        {
+          "name": "putCardsOnDeck",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
     }
   }
 }
