@@ -39,13 +39,26 @@
       },
       "treasure": 3
     },
+    "Platinum": {
+      "supply": {
+        "2": 12,
+        "3": 12,
+        "4": 12
+      },
+      "includeCondition": "prosperity",
+      "cost": 9,
+      "type": {
+        "Treasure": true
+      },
+      "treasure": 5
+    },
     "Curse": {
       "supply": {
         "2": 10,
         "3": 20,
         "4": 30
       },
-      "includeCondition": "always",
+      "includeCondition": "prosperity",
       "cost": 0,
       "type": {
         "Curse": true
@@ -62,7 +75,7 @@
     "Estate": {
       "supply": {
         "2": 8,
-        "3": 10,
+        "3": 12,
         "4": 12
       },
       "includeCondition": "always",
@@ -82,7 +95,7 @@
     "Duchy": {
       "supply": {
         "2": 8,
-        "3": 10,
+        "3": 12,
         "4": 12
       },
       "includeCondition": "always",
@@ -115,6 +128,26 @@
           "type": "constant",
           "params": {
             "value": 6
+          }
+        }
+      ]
+    },
+    "Colony": {
+      "supply": {
+        "2": 8,
+        "3": 12,
+        "4": 12
+      },
+      "includeCondition": "prosperity",
+      "cost": 11,
+      "type": {
+        "Victory": true
+      },
+      "victory": [
+        {
+          "type": "constant",
+          "params": {
+            "value": 10
           }
         }
       ]
@@ -357,7 +390,7 @@
     "Gardens": {
       "supply": {
         "2": 8,
-        "3": 10,
+        "3": 12,
         "4": 12
       },
       "includeCondition": "kingdomCard",
