@@ -937,7 +937,8 @@
         "3": 12,
         "4": 12
       },
-      "includeCondition": "always",
+      "includeCondition": "kingdomCard",
+      "set": "Intrigue",
       "cost": 2,
       "type": {
         "Treasure": true,
@@ -952,6 +953,37 @@
           }
         }
       ]
+    },
+    "Coin of the Realm": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Adventures",
+      "cost": 2,
+      "type": {
+        "Treasure": true,
+        "Reserve": true
+      },
+      "treasure": 1,
+      "effects": [
+        {
+          "name": "putInTavern"
+        }
+      ],
+      "tavernCondition": {
+        "name": "afterResolvingAction",
+        "effects": [
+          {
+            "name": "plusAction",
+            "params": {
+              "amount": 2
+            }
+          }
+        ]
+      }
     }
   }
 }

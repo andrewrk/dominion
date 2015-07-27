@@ -6,7 +6,7 @@
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
   "bin": {
-    "dominion": "./lib/main.js"
+    "dominion-cli": "./lib/main.js"
   },
   "dependencies": {
     "random-js": "~1.0.4"
