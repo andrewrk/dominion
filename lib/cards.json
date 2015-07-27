@@ -984,6 +984,221 @@
           }
         ]
       }
+    },
+    "Page": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Adventures",
+      "cost": 2,
+      "type": {
+        "Action": true,
+        "Traveller": true
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        }
+      ],
+      "travellerUpgrade": "Treasure Hunter"
+    },
+    "Treasure Hunter": {
+      "excludeFromSupply": true,
+      "supply": {
+        "2": 5,
+        "3": 5,
+        "4": 5
+      },
+      "includeCondition": "page",
+      "set": "Adventures",
+      "cost": 3,
+      "type": {
+        "Action": true,
+        "Traveller": true
+      },
+      "effects": [
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "gainCardPerCardGainedByLastPlayer",
+          "params": {
+            "name": "Silver"
+          }
+        }
+      ],
+      "travellerUpgrade": "Warrior"
+    },
+    "Warrior": {
+      "excludeFromSupply": true,
+      "supply": {
+        "2": 5,
+        "3": 5,
+        "4": 5
+      },
+      "includeCondition": "page",
+      "set": "Adventures",
+      "cost": 4,
+      "type": {
+        "Action": true,
+        "Attack": true,
+        "Traveller": true
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "attackDiscardTrashPerTraveller",
+          "params": {
+            "trashMinCost": 3,
+            "trashMaxCost": 4
+          }
+        }
+      ],
+      "travellerUpgrade": "Hero"
+    },
+    "Hero": {
+      "excludeFromSupply": true,
+      "supply": {
+        "2": 5,
+        "3": 5,
+        "4": 5
+      },
+      "includeCondition": "page",
+      "set": "Adventures",
+      "cost": 5,
+      "type": {
+        "Action": true,
+        "Traveller": true
+      },
+      "effects": [
+        {
+          "name": "plusTreasure",
+          "params": {
+            "amount": 2
+          }
+        },
+        {
+          "name": "gainCard",
+          "params": {
+            "type": "Treasure"
+          }
+        }
+      ],
+      "travellerUpgrade": "Champion"
+    },
+    "Champion": {
+      "excludeFromSupply": true,
+      "supply": {
+        "2": 5,
+        "3": 5,
+        "4": 5
+      },
+      "includeCondition": "page",
+      "set": "Adventures",
+      "cost": 6,
+      "type": {
+        "Action": true,
+        "Duration": true
+      },
+      "conditions": [
+        {
+          "name": "onAttack",
+          "mandatory": true,
+          "effects": [
+            {
+              "name": "unaffectedByAttack"
+            }
+          ]
+        },
+        {
+          "name": "afterResolvingAction",
+          "mandatory": true,
+          "effects": [
+            {
+              "name": "plusAction",
+              "params": {
+                "amount": 1
+              }
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        }
+      ]
+    },
+    "Ratcatcher": {
+      "supply": {
+        "2": 10,
+        "3": 10,
+        "4": 10
+      },
+      "includeCondition": "kingdomCard",
+      "set": "Adventures",
+      "cost": 2,
+      "type": {
+        "Action": true,
+        "Reserve": true
+      },
+      "effects": [
+        {
+          "name": "plusCard",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "plusAction",
+          "params": {
+            "amount": 1
+          }
+        },
+        {
+          "name": "putInTavern"
+        }
+      ],
+      "tavernCondition": {
+        "name": "onTurnStart",
+        "effects": [
+          {
+            "name": "trashCards",
+            "params": {
+              "amount": 1
+            }
+          }
+        ]
+      }
     }
   }
 }
