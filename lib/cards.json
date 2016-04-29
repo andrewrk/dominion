@@ -115,7 +115,7 @@
     "Province": {
       "supply": {
         "2": 8,
-        "3": 10,
+        "3": 12,
         "4": 12
       },
       "includeCondition": "always",
